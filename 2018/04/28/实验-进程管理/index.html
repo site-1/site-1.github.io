@@ -1,0 +1,247 @@
+<!DOCTYPE html><html lang="en"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description"><title>实验-进程管理(线程、进程、互斥与死锁) | xiafei-xupt's blog</title><link rel="stylesheet" type="text/css" href="//fonts.css.network/css?family=Source+Code+Pro"><link rel="stylesheet" type="text/css" href="/css/style.css?v=2.0.1"><link rel="stylesheet" type="text/css" href="/css/highlight.css?v=2.0.1"><link rel="Shortcut Icon" href="/favicon.ico"><link rel="bookmark" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><link rel="alternate" type="application/atom+xml" href="/atom.xml"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">实验-进程管理(线程、进程、互斥与死锁)</h1><a id="logo" href="/.">xiafei-xupt's blog</a><p class="description">汝之意志所向,即吾剑之所指</p></div><div id="nav-menu"><a href="/." class="current"><i class="fa fa-home"> Home</i></a><a href="/about/"><i class="fa fa-user"> About</i></a><a href="/atom.xml"><i class="fa fa-rss"> RSS</i></a></div><div id="search-form"><div id="result-mask" class="hide"></div><label><input id="search-key" type="text" autocomplete="off" placeholder="Arama"></label><div id="result-wrap" class="hide"><div id="search-result"></div></div><div class="hide"><template id="search-tpl"><div class="item"><a href="/{path}" title="{title}"><div class="title">{title}</div><div class="time">{date}</div><div class="tags">{tags}</div></a></div></template></div></div></div><div id="layout" class="layout-g"><div class="layout-l"><div class="content_container"><div class="post"><h1 class="post-title">实验-进程管理(线程、进程、互斥与死锁)</h1><div class="post-meta"><a href="/2018/04/28/实验-进程管理/#comments" class="comment-count"></a><p><span class="date">Apr 28, 2018</span><span><i id="busuanzi_container_page_pv"><i id="busuanzi_value_page_pv"></i><i>Hits</i></i></span></p></div><div class="post-content"><h1 id="一-实验目的及实验环境"><a href="#一-实验目的及实验环境" class="headerlink" title="一. 实验目的及实验环境"></a>一. 实验目的及实验环境</h1><h2 id="实验环境"><a href="#实验环境" class="headerlink" title="实验环境"></a>实验环境</h2><h3 id="硬件"><a href="#硬件" class="headerlink" title="硬件"></a>硬件</h3><p>处理器：i7；<br>内存：8G；<br>显示器：VGA 或更高；<br>硬盘空间：128G。</p>
+<h3 id="软件"><a href="#软件" class="headerlink" title="软件"></a>软件</h3><p>Centos 7下gcc编译器、gdb调试工具。</p>
+<h2 id="实验目的"><a href="#实验目的" class="headerlink" title="实验目的"></a>实验目的</h2><h3 id="进程"><a href="#进程" class="headerlink" title="进程"></a>进程</h3><p>通过观察、分析实验现象，深入理解多进程并发执行的过程、fork函数在创建子进程时对内存的操作；<br>加深对进程概念的理解，明确进程和程序的区别；<br>进一步认识并发执行的实质；<br>分析进程争用资源的现象，学习解决进程互斥的方；<br>了解Linux系统中进程通信的基本原理。</p>
+<h3 id="线程"><a href="#线程" class="headerlink" title="线程"></a>线程</h3><p>理解多线程的概念，学会Linux编程中的线程的创建与终止。<br>理解多线程并发工作时对资源的抢占，通过本实验掌握在Linux操作系统中遵循Posix线程标准接口进行多线程程序编程，熟练掌握线程的创建pthread_create()。</p>
+<h3 id="互斥与死锁"><a href="#互斥与死锁" class="headerlink" title="互斥与死锁"></a>互斥与死锁</h3><p>理解死锁的产生原因与Linux编程中对临界资源进行加锁使得多进程或多线程对临界资源进行互斥访问。</p>
+<p>利用信号量或者互斥锁实现线程间的同步。</p>
+<h1 id="二、实验内容"><a href="#二、实验内容" class="headerlink" title="二、实验内容"></a>二、实验内容</h1><h2 id="进程-1"><a href="#进程-1" class="headerlink" title="进程"></a>进程</h2><p>1、你最初认为运行结果会怎么样？</p>
+<p>答：会持续输出0-9号进程，直到输入数字键+回车，则会杀死该进程，接下来的输出将不会有该进程号，当输入q+回车，则退出程序。</p>
+<p>2、实际的结果什么样？有什么特点？试对产生该现象的原因进行分析。</p>
+<p>答：实际的结果与预期差不多。因输入进程总数3小于设定的最大进程数，因此按进程数3来处理。随机输出0-2号进程，sleep(SLEEP_INTERVAL)，循环输出，输入数字键，则会杀死该数字对应的进程，直到输入q退出循环，然后kill杀死本组所有进程。分析：每创建一个子进程时，将其pid存储在pid[i]中，i存储在proc_number，然后调用死循环函数do_something()，输出该进程的代号proc_number；当输入数字键时，主进程会执行kill(pid[ch-‘0’],SIGTERM)，从而杀死（ch-‘0’）号进程。当输入q时循环退出，kill(0,SIGTERM)，杀死本组所有进程，程序退出。</p>
+<p>3、proc_number 这个全局变量在各个子进程里的值相同吗？为什么？</p>
+<p>答：相同，因为子进程相互独立，资源互不影响。</p>
+<p>4、kill 命令在程序中使用了几次？每次的作用是什么？执行后的现象是什么？</p>
+<p>答：kill命令在程序中使用了2次：kill(pid[ch-‘0’],SIGTERM)和kill(0,SIGTERM);<br>第一次是杀死该进程号pid[ch-‘0’]，执行后接下来的结果中不会有该进程号，就会使该子进程真正结束。<br>第二次是杀死本组所有进程。即主进程以及它创建的所有子进程。执行后程序退出，进程结束。</p>
+<p>5、使用kill 命令可以在进程的外部杀死进程。进程怎样能主动退出？这两种退出方式哪种更好一些？</p>
+<p>答：进程在main函数中return，或调用exit()函数都可以正常退出。 而使用kill命令则是异常退出。 当然是正常退出比较好，若在子进程退出前使用kill命令杀死其父进程，则系统会让init进程接管子进程。当用kill命令使得子进程先于父进程退出时，而父进程又没有调用wait函数等待子进程结束，子进程处于僵死状态，并且会一直保持下去，直到系统重启。子进程处于僵死状态时，内核只保存该进程的必要信息以被父进程所需，此时子进程始终占着资源，同时减少了系统可以创建的最大进程数。</p>
+<p>6、在do_something()输出pro_number的地址，把do_something里的死循环改成10次，问实际创建的子进程个数有什么变化？</p>
+<p>答：pro_number的地址不变，当把死循环改成10次后，子进程个数只有10个，并且杀死后的进程还是会重新输出。</p>
+<h2 id="线程-1"><a href="#线程-1" class="headerlink" title="线程"></a>线程</h2><p>1、你最初认为前三列数会相等吗？最后一列斜杠两边的数字是相等，还是大于或者小于关系？</p>
+<p>答：我认为前三列数不会相等，因为线程之间在抢占cpu资源，三个线程运行次数是随机的，最后一列的数字左边等于右边。</p>
+<p>2、最后的结果如你所料吗？有什么特点？试对原因进行分析。</p>
+<p>答：最后的结果不是我所预料的，最后斜杠两边的数字时一样的，原因在与我在程序中添加了信号量。</p>
+<p>3、thread 的CPU 占用率是多少？为什么会这样？<br>答：在我的电脑上cpu占用率147%,一个方面是线程执行的都是无限循环的代码，另一方面是线程之间抢占资源很激烈。</p>
+<p>4、thread_worker()内是死循环，它是怎么退出的？你认为这样退出好吗？</p>
+<p>答：thread_worker()函数内是死循环，退出时因为主函数中设置的输入q时循环退出。整个进程的终止导致了所有线程的结束，这样结束线程不好，因为如果线程使用临界资源的时候没有释放就结束了，那么这个临界资源就会被认为是被已经退出的线程占用着，从而得不到释放。</p>
+<h2 id="互斥与死锁-1"><a href="#互斥与死锁-1" class="headerlink" title="互斥与死锁"></a>互斥与死锁</h2><p>1、你预想deadlock.c 的运行结果会如何？</p>
+<p>答：运行结果可能会发生中止现象，我认为thread1和thread2会相互争抢资源，有一定的概率发生死锁，因为他们的运行顺序是抢占式的。</p>
+<p>2、deadlock.c 的实际运行结果如何？多次运行每次的现象都一样吗？为什么会这样？</p>
+<p>答：实际的运行结果是：开始几次运行正常，但是经过多次的运行之后，其中一次会让程序卡死，无法再执行。这是因为thread1锁定了资源1，thread2锁定了资源2，两个线程又同时需要对方的资源，这样导致了死锁。</p>
+<h1 id="三．方案设计"><a href="#三．方案设计" class="headerlink" title="三．方案设计"></a>三．方案设计</h1><h2 id="进程-2"><a href="#进程-2" class="headerlink" title="进程"></a>进程</h2><p>利用fork( )函数创建进程，并将每个进程的进程号保存在主进程中保存进程号的数组。每个进程输出自己是第几个进程与自己的进程号。当用户输入’q’时，主进程向每个进程发送终止信号，杀死所有进程；学习fork与kill的用法，补全程序代码，调试运行，观察并 分析实验结果。</p>
+<h2 id="线程-2"><a href="#线程-2" class="headerlink" title="线程"></a>线程</h2><p>主进程创建三个线程并发工作。这三个线程都对main_counter进程修改(没执行一次循环将main_counter加1)，也将属于自己线程的变量counter[i]加1，最后比较三个线程counter值之和与main_counter的大小。补全程序代码，调试运行，观察并 分析实验结果。</p>
+<h2 id="互斥与死锁-2"><a href="#互斥与死锁-2" class="headerlink" title="互斥与死锁"></a>互斥与死锁</h2><p>准备好上节实验3完成的程序。阅读参考资料，了解互斥锁的加锁机制 及相关的系统调用。找到实验3程序的代码临界区，用临界区解决 main_counter 与sum 不同步的问题。对main_counter与sum加锁实现三个线程的互斥访问。</p>
+<h1 id="四．测试数据及运行结果"><a href="#四．测试数据及运行结果" class="headerlink" title="四．测试数据及运行结果"></a>四．测试数据及运行结果</h1><h2 id="进程："><a href="#进程：" class="headerlink" title="进程："></a>进程：</h2><h2 id="线程："><a href="#线程：" class="headerlink" title="线程："></a>线程：</h2><h2 id="互斥与死锁："><a href="#互斥与死锁：" class="headerlink" title="互斥与死锁："></a>互斥与死锁：</h2><h1 id="五．总结"><a href="#五．总结" class="headerlink" title="五．总结"></a>五．总结</h1><p>在本次实验中，我学会了创建进程和杀死进程，创建线程和杀死线程，线程的种类，和线程创建及管理机制并且了解了线程互斥锁的类型。重新理解了互斥与同步的概念以及死锁及其相关内容。更进一步认识死锁的发生条件和预防死锁发生的方法。死锁发生的条件有互斥条件，占有且等待条件，不可抢占条件等。我们只要破坏死锁发生条件之一我们就可以预防死锁的发生！本实验采用破坏占有且等待条件预防死锁发生！处理及调度的算法有一定的难度，因为其理论上的难度，但是通过学习让我对其有了更加深入的了解，让我认识到了，操作系统是一项真正实用，而且很有意义的学科，增加了我对操作系统的兴趣，也为以后的学习打下理论基础。</p>
+<h1 id="六、源代码"><a href="#六、源代码" class="headerlink" title="六、源代码"></a>六、源代码</h1><h2 id="进程-3"><a href="#进程-3" class="headerlink" title="进程"></a>进程</h2><pre><code>#include&lt;stdio.h&gt;
+#include&lt;sys/types.h&gt;
+#include&lt;unistd.h&gt;
+#include&lt;signal.h&gt;
+#include&lt;ctype.h&gt;
+#define MAX_CHILD_NUMBER 10
+#define SLEEP_INTERVAL 2
+int proc_number=0;
+void do_something();
+main(int argc,char* argv[])
+{
+int child_proc_number=MAX_CHILD_NUMBER;
+int i;
+char ch;
+pid_t child_pid;
+pid_t pid[10]={0};/*存放每个子进程的id*/
+if(argc&gt;1)
+{
+child_proc_number=atoi(argv[1]);
+child_proc_number=(child_proc_number&gt;10)?10:child_proc_number;
+}
+for(i=0;i&lt;child_proc_number;i++)
+{
+child_pid=fork();
+if(child_pid==-1)
+{
+perror(&quot;fork&quot;);
+}
+else if(child_pid==0)
+{
+proc_number=i;
+do_something();
+}
+else
+pid[i]=child_pid;
+}
+/*用户选择杀死进程，数字表示杀死该进程,q表示退出*/
+printf(&quot;请输入要杀死进程的编号(q退出):\n&quot;);
+while((ch=getchar())!=&apos;q&apos;)
+{
+if(isdigit(ch))
+{
+kill(pid[ch-&apos;0&apos;],SIGTERM);
+}
+}
+/*杀死本组的所有进程*/
+for(i=0;i&lt;=proc_number;i++)
+{
+kill(pid[i],SIGTERM);
+}
+kill(0,SIGTERM);
+return;
+}
+void do_something()
+{
+for(;;)
+{
+printf(&quot;This is process No.%d and its pid is %d\n&quot;,proc_number,getpid());
+sleep(SLEEP_INTERVAL);
+}
+}
+</code></pre><h2 id="线程-3"><a href="#线程-3" class="headerlink" title="线程"></a>线程</h2><pre><code>#include &lt;stdio.h&gt; 
+#include &lt;sys/types.h&gt;
+#include &lt;unistd.h&gt; 
+#include &lt;ctype.h&gt;
+#include &lt;pthread.h&gt; 
+#include&lt;semaphore.h&gt;
+#define MAX_THREAD 3 /* 线程的个数 */
+unsigned long long main_counter, counter[MAX_THREAD]; 
+/* unsigned long  long是比long还长的整数 */
+sem_t S1,S2;
+void* thread_worker(void*); 
+void *thread_worker(void *p){
+int thread_num;
+thread_num=(int)p;
+  for(;;){
+ sem_wait(&amp;S1);
+ sem_wait(&amp;S2);
+ counter[thread_num]++;/* 本线程的counter加一 */
+ main_counter++;/* 主counter 加一 */
+ sem_post(&amp;S2);
+ sem_post(&amp;S1);
+   }
+}
+int main(int argc,char *argv[])
+{
+int i,rtn,ch;
+   pthread_t pthread_id[MAX_THREAD]={0};
+sem_init(&amp;S1,0,1);
+sem_init(&amp;S2,0,1);
+   for(i=0;i&lt;MAX_THREAD;i++)
+   {
+ rtn=pthread_create(&amp;pthread_id[i],NULL,thread_worker,(void*)i);
+   }
+   do
+{
+ unsigned long long sum=0;
+ sem_wait(&amp;S1);
+ sem_wait(&amp;S2);  
+for(i=0;i&lt;MAX_THREAD;i++){/* 求所有counter的和 */
+   sum+=counter[i];
+  printf(&quot;第%d个counter的值是%llu\n&quot;,i+1,counter[i]);
+   }
+printf(&quot;main_counter的值:%llu sum的值%llu\n&quot;,main_counter,sum);
+sem_post(&amp;S2);
+sem_post(&amp;S1);
+}while((ch=getchar())!=&apos;q&apos;);
+return 0;
+}
+</code></pre><h2 id="互斥锁"><a href="#互斥锁" class="headerlink" title="互斥锁"></a>互斥锁</h2><pre><code>#include &lt;stdio.h&gt; 
+#include &lt;sys/types.h&gt;
+#include &lt;unistd.h&gt;
+# include &lt;ctype.h&gt;
+#include &lt;pthread.h&gt; 
+#define LOOP_TIMES 10000 
+pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex2 = PTHREAD_MUTEX_INITIALIZER;
+void* thread_worker(void*);
+void critical_section(int thread_num, int i);
+void *thread_worker(void *p)
+{
+  int i;
+  for(i=0;i&lt;LOOP_TIMES;i++)
+{
+//对互斥锁上锁
+  pthread_mutex_lock(&amp;mutex1);
+  pthread_mutex_lock(&amp;mutex2);
+  critical_section(2,i);
+//对互斥锁解锁
+  pthread_mutex_unlock(&amp;mutex2);
+  pthread_mutex_unlock(&amp;mutex1);
+}
+}
+void critical_section(int thread_num,int i)
+{
+printf(&quot;Thread%d:%d\n&quot;,thread_num,i);
+}
+int main()
+{
+   int rtn,i;
+  pthread_t pthread_id=0;
+  rtn=pthread_create(&amp;pthread_id,NULL,thread_worker,NULL);
+ if(rtn!=0)
+{
+  printf(&quot;pthread_create ERROR!\n&quot;);
+  return -1;
+}
+ for(i=0;i&lt;LOOP_TIMES;i++)
+{
+  pthread_mutex_lock(&amp;mutex1);
+  pthread_mutex_lock(&amp;mutex2);
+  critical_section(1,i);
+  pthread_mutex_unlock(&amp;mutex2);
+  pthread_mutex_unlock(&amp;mutex1);
+}
+//互斥锁销毁
+pthread_mutex_destroy(&amp;mutex1);
+pthread_mutex_destroy(&amp;mutex2);
+return 0;
+}
+</code></pre><h2 id="信号量"><a href="#信号量" class="headerlink" title="信号量"></a>信号量</h2><pre><code>#include&lt;stdio.h&gt;
+#include&lt;sys/types.h&gt;
+#include&lt;ctype.h&gt;
+#include&lt;unistd.h&gt;
+#include&lt;pthread.h&gt;
+#include&lt;semaphore.h&gt;
+#define LOOP_TIMES 10000
+sem_t S1,S2;
+void *thread_worker(void *);
+void critical_section(int thread_num,int i);
+void *thread_worker(void *p)
+{
+ int i;
+   for(i=0;i&lt;LOOP_TIMES;i++)
+{
+//信号量减一
+  sem_wait(&amp;S2);
+  sem_wait(&amp;S1);
+  critical_section(2,i);
+//信号量加一
+  sem_post(&amp;S1);
+  sem_post(&amp;S2);
+}
+  }
+void critical_section(int thread_num,int i)
+{
+printf(&quot;Thread%d:%d\n&quot;,thread_num,i);   
+}
+int main()
+{
+   int rtn,i;
+   sem_init(&amp;S1,0,1);
+   sem_init(&amp;S2,0,1);
+  pthread_t pthread_id=0;
+  rtn=pthread_create(&amp;pthread_id,NULL,thread_worker,NULL);
+ if(rtn!=0)
+{
+  printf(&quot;pthread_create ERROR!\n&quot;);
+  return -1;
+}
+ for(i=0;i&lt;LOOP_TIMES;i++)
+{
+  sem_wait(&amp;S1);
+  sem_wait(&amp;S2);
+  critical_section(1,i);
+  sem_post(&amp;S1);
+  sem_post(&amp;S2); 
+}
+//销毁信号量
+sem_destroy(&amp;S1);
+sem_destroy(&amp;S2);
+return 0;
+}
+</code></pre><h1 id="七、改进"><a href="#七、改进" class="headerlink" title="七、改进"></a>七、改进</h1></div><div class="tags"><a href="/tags/操作系统/">操作系统</a></div><div class="post-share"></div><div class="post-nav"><a href="/2018/05/23/面试-操作系统/" class="pre">面试-操作系统</a><a href="/2018/03/20/diary-2018-0318-0320/" class="next">Kernel前辈教C小子探案  3.18-3.20</a></div><div id="comments"></div></div></div></div><div class="layout-r"><div id="sidebar"><div class="search-pla"></div><div id="toc" class="widget"><div class="widget-title"><i class="fa fa-fei">Contents</i></div><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#一-实验目的及实验环境"><span class="toc-text">一. 实验目的及实验环境</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#实验环境"><span class="toc-text">实验环境</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#硬件"><span class="toc-text">硬件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#软件"><span class="toc-text">软件</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#实验目的"><span class="toc-text">实验目的</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#进程"><span class="toc-text">进程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#线程"><span class="toc-text">线程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#互斥与死锁"><span class="toc-text">互斥与死锁</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#二、实验内容"><span class="toc-text">二、实验内容</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#进程-1"><span class="toc-text">进程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#线程-1"><span class="toc-text">线程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#互斥与死锁-1"><span class="toc-text">互斥与死锁</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#三．方案设计"><span class="toc-text">三．方案设计</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#进程-2"><span class="toc-text">进程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#线程-2"><span class="toc-text">线程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#互斥与死锁-2"><span class="toc-text">互斥与死锁</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#四．测试数据及运行结果"><span class="toc-text">四．测试数据及运行结果</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#进程："><span class="toc-text">进程：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#线程："><span class="toc-text">线程：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#互斥与死锁："><span class="toc-text">互斥与死锁：</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#五．总结"><span class="toc-text">五．总结</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#六、源代码"><span class="toc-text">六、源代码</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#进程-3"><span class="toc-text">进程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#线程-3"><span class="toc-text">线程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#互斥锁"><span class="toc-text">互斥锁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#信号量"><span class="toc-text">信号量</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#七、改进"><span class="toc-text">七、改进</span></a></li></ol></div><div class="widget"><div class="widget-title"><i class="fa fa-xie"> Recent</i></div><ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2018/08/08/FAQ/">FAQ</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/03/简单的linux设备驱动程序/">简单的linux设备驱动程序</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/03/日志分析及数据库表的设计/">日志分析及数据库表的设计</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/31/proc目录下信息提取/">proc目录下信息提取</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/31/Electron应用开发/">Electron应用开发</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/31/BlurAdmin模板学习/">BlurAdmin模板学习</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/31/Electron开发流程/">Electron开发流程</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/30/PostgreSQL操作接口/">PostgreSQL操作接口</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/29/PostgreSQL语法学习/">PostgreSQL语法学习</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/29/PostgreSQL环境搭建/">PostgreSQL环境搭建</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-biao"> Tags</i></div><div class="tagcloud"><a href="/tags/安全/" style="font-size: 15px;">安全</a> <a href="/tags/旧事/" style="font-size: 15px;">旧事</a> <a href="/tags/博客/" style="font-size: 15px;">博客</a> <a href="/tags/Kernel/" style="font-size: 15px;">Kernel</a> <a href="/tags/操作系统/" style="font-size: 15px;">操作系统</a> <a href="/tags/红线/" style="font-size: 15px;">红线</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-archive"> Archive</i></div><ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/08/">August 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/07/">July 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/04/">April 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/03/">March 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/06/">June 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/05/">May 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/04/">April 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/03/">March 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04/">April 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/03/">March 2014</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-you"> Blogroll</i></div><ul></ul><a href="http://www.example1.com/" title="site-name1" target="_blank">site-name1</a><ul></ul><a href="http://www.example2.com/" title="site-name2" target="_blank">site-name2</a><ul></ul><a href="http://www.example3.com/" title="site-name3" target="_blank">site-name3</a></div></div></div></div><a id="totop" href="#top"></a><div id="footer"><div class="footer-info"><p><a href="/baidusitemap.xml">Baidu Site Haritası</a> |  <a href="/atom.xml">RSS</a> |  <a href="/about/">About</a></p><p>本站总访问量：<i id="busuanzi_container_site_pv"><i id="busuanzi_value_site_pv"></i></i>次</p><p><span> Copyright &copy;<a href="/." rel="nofollow">xiafei-xupt.</a></span><span> Theme by<a rel="nofollow" target="_blank" href="https://github.com/chaooo/hexo-theme-BlueLake"> BlueLake.</a></span><span> Count by<a href="http://busuanzi.ibruce.info/"> busuanzi.</a></span><span> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a></span></p></div></div></div><script src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js" async></script><script type="text/javascript" src="/js/search.json.js?v=2.0.1"></script><script type="text/javascript" src="/js/toctotop.js?v=2.0.1" async></script></body></html>

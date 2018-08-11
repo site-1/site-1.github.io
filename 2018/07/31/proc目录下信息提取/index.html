@@ -1,0 +1,616 @@
+<!DOCTYPE html><html lang="en"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description"><title> | xiafei-xupt's blog</title><link rel="stylesheet" type="text/css" href="//fonts.css.network/css?family=Source+Code+Pro"><link rel="stylesheet" type="text/css" href="/css/style.css?v=2.0.1"><link rel="stylesheet" type="text/css" href="/css/highlight.css?v=2.0.1"><link rel="Shortcut Icon" href="/favicon.ico"><link rel="bookmark" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><link rel="alternate" type="application/atom+xml" href="/atom.xml"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">xiafei-xupt's blog</h1><a id="logo" href="/.">xiafei-xupt's blog</a><p class="description">汝之意志所向,即吾剑之所指</p></div><div id="nav-menu"><a href="/." class="current"><i class="fa fa-home"> Home</i></a><a href="/about/"><i class="fa fa-user"> About</i></a><a href="/atom.xml"><i class="fa fa-rss"> RSS</i></a></div><div id="search-form"><div id="result-mask" class="hide"></div><label><input id="search-key" type="text" autocomplete="off" placeholder="Arama"></label><div id="result-wrap" class="hide"><div id="search-result"></div></div><div class="hide"><template id="search-tpl"><div class="item"><a href="/{path}" title="{title}"><div class="title">{title}</div><div class="time">{date}</div><div class="tags">{tags}</div></a></div></template></div></div></div><div id="layout" class="layout-g"><div class="layout-l"><div class="content_container"><div class="post"><h1 class="post-title"></h1><div class="post-meta"><a href="/2018/07/31/proc目录下信息提取/#comments" class="comment-count"></a><p><span class="date">Jul 31, 2018</span><span><i id="busuanzi_container_page_pv"><i id="busuanzi_value_page_pv"></i><i>Hits</i></i></span></p></div><div class="post-content"><h1 id="Linux-proc目录下信息提取"><a href="#Linux-proc目录下信息提取" class="headerlink" title="Linux /proc目录下信息提取"></a>Linux /proc目录下信息提取</h1><h3 id="2018-6-25-2018-7-1"><a href="#2018-6-25-2018-7-1" class="headerlink" title="2018-6-25~2018-7-1"></a>2018-6-25~2018-7-1</h3><h2 id="标签：-Linux"><a href="#标签：-Linux" class="headerlink" title="标签： Linux"></a>标签： Linux</h2><blockquote>
+<ul>
+<li>0x00-文章前言</li>
+<li>0x01-知识储备</li>
+<li>0x02-测试环境</li>
+<li>0x03-方案设计</li>
+<li>0x04-实践验证</li>
+<li>0x05-总结分析</li>
+<li>0x06-程序源码</li>
+<li>0x07-参考资料</li>
+</ul>
+</blockquote>
+<h1 id="0x00-文章前言"><a href="#0x00-文章前言" class="headerlink" title="0x00-文章前言"></a>0x00-文章前言</h1><h2 id="文章目的"><a href="#文章目的" class="headerlink" title="文章目的"></a>文章目的</h2><p>了解proc文件系统即/proc目录，获取该目录下内核运行状态的一系列系统状态信息，并将其以文档形式导出。</p>
+<h2 id="文章前景"><a href="#文章前景" class="headerlink" title="文章前景"></a>文章前景</h2><p>可以更加及时、准确地获得系统状态信息，以便后续对其进行分析、评估、预测、态势感知等。</p>
+<h1 id="0x01-知识储备"><a href="#0x01-知识储备" class="headerlink" title="0x01-知识储备"></a>0x01-知识储备</h1><h2 id="proc文件系统简介"><a href="#proc文件系统简介" class="headerlink" title="proc文件系统简介"></a>proc文件系统简介</h2><p>proc的全称为process data system   ，proc文件系统是一种无存储的文件系统，当读其中的文件时，其内容动态生成，当写文件时，文件所关联的写函数被调用。每个proc文件都关联的字节特定的读写函数，因而它提供了另外的一种和内核通信的机制：内核部件可以通过该文件系统向用户空间提供接口来提供查询信息、修改软件行为，因而它是一种比较重要的特殊文件系统。</p>
+<p>Linux系统上的/proc目录是一种文件系统，即proc文件系统。与其它常见的文件系统不同的是，/proc是一种伪文件系统（也即虚拟文件系统），存储的是当前内核运行状态的一系列特殊文件，用户可以通过这些文件查看有关系统硬件及当前正在运行进程的信息，甚至可以通过更改其中某些文件来改变内核的运行状态。<br>proc文件系统属于虚拟文件系统，即该文件系统的数据，由内核动态生成，并不会存放在持久存储数据中。<br>“即时”产生文件信息，换句话说，只有发出读操作请求时，才会产生信息。<br>它以文件系统的方式为访问系统内核数据的操作提供接口。</p>
+<p>proc文件系统，使得内核可以生成与系统状态和配置有关的信息。该信息可以由用户和系统程序从普通文件读取，而无需专门的工具与内核通信。<br>从内核开发趋势来看，正在远离用proc文件系统提供的信息，而倾向于采用特定与问题的虚拟文件系统来导出数据。一个很好的例子就是USB文件系统，将与USB子系统有关的许多状态信息导出到用户空间，而没有给proc增加新的负担。但这并不意味这，proc文件系统变的多余，当今，/proc依旧重要，不仅在安装新的发布版时，而且也用于支持（自动化的）系统管理。</p>
+<p> procfs 是进程文件系统(file system) 的缩写，包含一个伪文件系统（启动时动态生成的文件系统），用于通过内核访问进程信息。这个文件系统通常被挂载到 /proc 目录。由于 /proc 不是一个真正的文件系统，它也就不占用存储空间，只是占用有限的内存。</p>
+<h2 id="proc目录中的常见文件介绍"><a href="#proc目录中的常见文件介绍" class="headerlink" title="proc目录中的常见文件介绍"></a>proc目录中的常见文件介绍</h2><p>静态生成：静态生成、动态变化<br>动态生成：动态变化</p>
+<h3 id="proc目录中包含许多以数字命名的子目录，这些数字表示系统当前正在运行进程的进程号，里面包含对应进程相关的多个信息文件。"><a href="#proc目录中包含许多以数字命名的子目录，这些数字表示系统当前正在运行进程的进程号，里面包含对应进程相关的多个信息文件。" class="headerlink" title="/proc目录中包含许多以数字命名的子目录，这些数字表示系统当前正在运行进程的进程号，里面包含对应进程相关的多个信息文件。"></a>/proc目录中包含许多以数字命名的子目录，这些数字表示系统当前正在运行进程的进程号，里面包含对应进程相关的多个信息文件。</h3><p>/proc/[pid]</p>
+<p>/proc/[pid]/attr</p>
+<p>/ proc / [pid] / attr / current<br> 该文件的内容代表当前的安全性过程的属性。</p>
+<p>/ proc / [pid] / attr / exec（自Linux 2.6.0开始该文件表示要分配给进程的属性</p>
+<p>/ proc / [pid] / attr / fscreate（自Linux 2.6.0开始）该文件表示要分配给创建的文件的属性</p>
+<p>/ proc / [pid] / attr / keycreate（自Linux 2.6.18开始） 如果一个进程将安全上下文写入这个文件，全部随后创建的键（add_key（2））将被标记这个背景。</p>
+<p>/proc/cpu/info<br>cat /proc/cpuinfo</p>
+<p>/ proc / [pid] / stat<br>              有关进程的状态信息。这由ps（1）使用。<br>              它在内核源文件fs / proc / array.c中定义。</p>
+<pre><code>这些字段按顺序带有适当的scanf（3）格式speci-
+以下列出。是否某些这些
+字段显示有效信息由ptrace管理
+访问模式PTRACE_MODE_READ_FSCREDS | PTRACE_MODE_NOAUDIT 
+检查（参考ptrace（2））。如果支票拒绝访问，那么
+字段值显示为0.受影响的字段为
+用标记[PT]表示。
+
+（1）pid   ％d
+          进程ID。
+
+（2）通讯   ％s
+          可执行文件的文件名，括号中。
+          无论可执行文件是否可见，这都是可见的
+          换出。
+
+（3）状态   ％c
+          指示过程的以下字符之一
+          州：
+
+          R运行
+
+          S睡在可中断的等待中
+
+          D正在等待不间断磁盘睡眠
+
+          Z Zombie
+
+          T停止（在信号上）或（在Linux 2.6.33之前）
+             追踪停止
+
+          t跟踪停止（Linux 2.6.33以上）
+
+          W Paging（仅在Linux 2.6.0之前）
+
+          X Dead（从Linux 2.6.0开始）
+
+          x Dead（仅Linux 2.6.33至3.13）
+
+          K Wakekill（仅适用于Linux 2.6.33至3.13）
+
+          W醒来（仅适用于Linux 2.6.33至3.13）
+
+          P停放（仅适用于Linux 3.9至3.13）
+
+（4）ppid   ％d
+          此进程的父进程的PID。
+
+（5）pgrp   ％d
+          进程的进程组ID。
+
+（6）会话   ％d
+          进程的会话ID。
+
+（7）tty_nr   ％d
+          过程的控制终端。（未成年人
+          设备编号包含在组合中
+          位31至20和7至0; 主要的设备编号是
+          在位15至8中）
+
+（8）tpgid   ％d
+          con的前台进程组的ID
+          流程的终端。
+
+（9）标志   ％u
+          内核标记进程的单词。对于位平均 - 
+          请参阅Linux内核中的PF_ *定义
+          源文件include / linux / sched.h。细节取决于
+          在内核版本上。
+
+          此字段的格式为Linux 2.6之前的％lu。
+
+（10）minflt   ％lu
+          过程所做的轻微故障的数量
+          不需要从中加载内存页面
+          磁盘。
+
+（11）cminflt   ％lu
+          该进程的小错误数量
+          等待的孩子们已经做出了决定。
+
+（12）majflt   ％lu
+          过程所造成的重大故障的数量
+          这需要从磁盘加载一个内存页面。
+
+（13）cmajflt   ％lu
+          该进程的主要故障数量
+          等待的孩子们已经做出了决定。
+
+（14）utime   ％lu
+          此进程已计划的时间量
+          在用户模式下，以时钟滴答度量（除以
+          sysconf（_SC_CLK_TCK））。这包括访客时间，
+           guest_time（运行虚拟CPU所花费的时间，请参阅
+          下面），以便不知道的应用程序
+          来宾时间字段不会从那时失去
+          他们的计算。
+
+（15）stime   ％lu
+          此进程已计划的时间量
+          在内核模式下，以时钟滴答度量（除以
+          sysconf（_SC_CLK_TCK））。
+
+（16）cutime   ％ld
+          这个进程等待的时间量，
+          dren已经安排在用户模式下，以英寸计量
+          时钟滴答（除以sysconf（_SC_CLK_TCK））。（看到
+          也包括时间（2））。这包括访客时间，
+           cguest_time（运行虚拟CPU所用的时间，请参阅
+          下面）。
+
+（17）cstime   ％ld
+          这个进程等待的时间量，
+          dren已经在内核模式下进行了安排，
+          时钟滴答（除以sysconf（_SC_CLK_TCK））。
+
+（18）优先级   ％ld
+          （针对Linux 2.6的解释）对于正在运行的进程
+          实时调度策略（以下策略 ;请参见
+           sched_setscheduler（2）），这是否定的schedul-
+          优先级，减1; 那就是一个数字
+          范围-2到-100，对应于实时优先级 - 
+          关系1到99.对于在non-
+          实时调度策略，这是非常好的
+          值（setpriority（2）），如内核中所示。
+          内核在数据中存储很好的值
+          范围0（高）到39（低），对应于
+          用户可见的-20至19的好范围。
+
+          在Linux 2.6之前，这是基于的一个缩放值
+          调度程序给予这个过程的权重。
+
+（19）nice   ％ld
+          好的值（请参阅setpriority（2）），这是一个值
+          范围19（低优先级）至-20（高优先级）。
+
+（20）num_threads   ％ld
+          此过程中的线程数（自Linux 2.6开始）。
+          在内核2.6之前，这个字段被硬编码为0
+          先前移除的字段的占位符。
+
+（21）itrealvalue   ％ld
+          在下一个SIGALRM之前jiffies的时间发送
+          归因于间隔计时器的过程。由于ker-
+          nel 2.6.17，这个字段不再维护，并且
+          被硬编码为0。
+
+（22）starttime   ％llu
+          系统启动后进程启动的时间。在
+          Linux 2.6之前的内核，表达了这个值
+          在jiffies。从Linux 2.6开始，数值被表达出来
+          在时钟周期中（除以sysconf（_SC_CLK_TCK））。
+
+          此字段的格式为Linux 2.6之前的％lu。
+
+（23）vs   ％lu
+          虚拟内存大小（字节）。
+
+（24）rss   ％ld
+          驻留集大小：进程拥有的页数
+          在真实的记忆中。这只是计数的页面
+          朝向文本，数据或堆栈空间。这不是
+          包括未被请求加载的页面，
+          或哪些被换出。
+
+（25）rsslim   ％lu
+          当前在软件rss上的软限制
+          处理; 看到的描述RLIMIT_RSS在
+           getrlimit（2） 。
+
+（26）startcode   ％lu [PT]
+          程序文本可以运行的地址。
+
+（27）endcode   ％lu [PT]
+          程序文本可以运行的地址。
+
+（28）startstack   ％lu [PT]
+          开始的地址（即底部）
+          叠加。
+
+（29）kstkesp   ％lu [PT]
+          发现ESP（堆栈指针）的当前值
+          在进程的内核堆栈页面中。
+
+（30）kstkeip   ％lu [PT]
+          当前的EIP（指令指针）。
+
+（31）信号   ％lu
+          未决信号的位图显示为deci-
+          mal号码。已过时，因为它不提供
+          有关实时信号的信息; 使用
+          / proc / [pid] / status。
+
+（32）阻止   ％lu
+          被阻塞信号的位图显示为一个deci-
+          mal号码。已过时，因为它不提供
+          有关实时信号的信息; 使用
+          / proc / [pid] / status。
+
+（33）sigignore   ％lu
+          忽略信号的位图，显示为一个deci-
+          mal号码。已过时，因为它不提供
+          有关实时信号的信息; 使用
+          / proc / [pid] / status。
+
+（34）sigcatch   ％lu
+          捕获信号的位图，以小数形式显示
+          数。已过时，因为它不提供
+          有关实时信号的信息; 使用
+          / proc / [pid] / status。
+
+（35）wchan   ％lu [PT]
+          这是进程等待的“通道”
+          ING。它是内核中某个位置的地址
+          进程在睡觉的地方。相应的
+          符号名称可以在/ proc / [pid] / wchan中找到。
+
+（36）nswap   ％lu
+          交换页数（不保留）。
+
+（37）cnswap   ％lu子进程的
+          累积nswap（不是main-
+          tained）。
+
+（38）exit_signal   ％d（自Linux 2.1.22开始）
+          当我们死亡时，信号被发送给父母。
+
+（39）处理器   ％d（自Linux 2.2.8开始）
+          上次执行的CPU号码。
+
+（40）rt_priority   ％U（因为Linux 2.5.19）
+          实时调度优先级，范围内的一个数字
+          1到99用于实时调度的进程
+          策略或0，用于非实时进程（请参阅
+          sched_setscheduler（2））。
+
+（41）策略   ％u（自Linux 2.5.19开始）
+          调度策略（请参阅sched_setscheduler（2））。
+          使用linux / sched.h中的SCHED_ *常量进行解码。
+
+          这个字段的格式是Linux之前的％lu
+          2.6.22。
+
+（42）delayacct_blkio_ticks   ％llu（自Linux 2.6.18开始）
+          累计块I / O延迟，以时钟滴答度量
+          （厘秒）。
+
+（43）guest_time   ％lu（自Linux 2.6.24起）
+          过程的访客时间（运行vir-
+          用于客户操作系统的双CPU），以英寸计算
+          时钟滴答（除以sysconf（_SC_CLK_TCK））。
+
+（44）cguest_time   ％ld（自Linux 2.6.24起）
+          该过程的孩子的访客时间，以英寸计
+          时钟滴答（除以sysconf（_SC_CLK_TCK））。
+
+（45）start_data   ％lu（自Linux 3.3起）[PT]
+          程序初始化和unini-
+          tialized（BSS）数据被放置。
+
+（46）end_data   ％lu（自Linux 3.3起）[PT]
+          地址在哪个程序初始化和unini-
+          tialized（BSS）数据被放置。
+
+（47）start_brk   ％lu（自Linux 3.3起）[PT]
+          程序堆的地址可以扩展
+          与brk（2）。
+
+（48）arg_start   ％lu（自Linux 3.5起）[PT]
+          程序命令行参数上面的地址
+          （argv）被放置。
+
+（49）arg_end   ％lu（自Linux 3.5起）[PT]
+          程序命令行参数（argv）下的地址
+          摆放在。
+
+（50）env_start   ％lu（自Linux 3.5起）[PT]
+          在上面放置程序环境的地址。
+
+（51）env_end   ％lu（自Linux 3.5起）[PT]
+          地址在哪个程序环境下放置。
+
+（52）exit_code   ％d（自Linux 3.5起）[PT]
+          线程的退出状态以表格形式报告
+          waitpid（2）。              
+</code></pre><p>/ proc / [pid] / status<br>              提供/ proc / [pid] / stat和<br>               / proc / [pid] / statm中的大部分信息，<br>              解析。这是一个例子：</p>
+<pre><code>    $ cat / proc / $$ / status
+    Name:   bash
+    Umask:  0022
+    State:  S (sleeping
+    Tgid：17248
+    Ngid：0
+    Pid：17248
+    PPid：17200
+    TracerPid：0
+    Uid：1000 1000 1000 1000
+    Gid：100 100 100 100
+    FDSize：256
+    Groups：16 33 100
+    NStgid：17248
+    NSpid：17248
+    NSpgid：17248
+    NSsid：17200
+    VmPeak：131168 kB
+    VmSize：131168 kB
+    VmLck：0 kB
+    VmPin：0 kB
+    VmHWM：13484 kB
+    VmRSS：13484 kB
+    RssAnon：10264 kB
+    RssFile：3220 kB
+    RssShmem：0 kB
+    VmData：10332 kB
+    VmStk：136 kB
+    VmExe：992 kB
+    VmLib：2104 kB
+    VmPTE：76 kB
+    VmPMD：12 kB
+    VmSwap：0 kB
+    HugetlbPages：0 kB＃4.4
+    Threads：1
+    SigQ:   0/3067
+    SigPnd: 0000000000000000
+    ShdPnd: 0000000000000000
+    SigBlk: 0000000000010000
+    SigIgn: 0000000000384004
+    SigCgt: 000000004b813efb
+    CapInh: 0000000000000000
+    CapPrm: 0000000000000000
+    CapEff: 0000000000000000
+    CapBnd: ffffffffffffffff
+    CapAmb:   0000000000000000
+    NoNewPrivs：0
+    Seccomp：0
+    Cpus_allowed：00000001
+    Cpus_allowed_list：0
+    Mems_allowed：1
+    Mems_allowed_list：0
+    volunte_ctxt_switches：150
+    nonvoluntary_ctxt_switches：545
+
+这些字段如下所示：
+
+* 名称：由此进程运行的命令。
+
+* Umask：处理umask，用八进制表示一个领先的
+  零; 见umask（2）。（从Linux 4.7开始）。
+
+* 状态：进程的当前状态。其中一个“R（跑步）”，
+  “S（睡眠）”，“D（磁盘睡眠）”，“T（停止）”，“T（追踪
+  停止）“，”Z（僵尸）“或”X（死亡）“。
+
+* Tgid：线程组ID（即进程ID）。
+
+* Ngid：NUMA组ID（如果没有，则为0;自Linux 3.13以来）。
+
+* Pid：线程ID（请参阅gettid（2））。
+
+* PPid：父进程的PID。
+
+* TracerPid：进程跟踪此进程的PID（如果不是，则为0）
+  被追踪）。
+
+* Uid，Gid：真实，有效，保存的设置和文件系统UID
+  （GID的）。
+
+* FDSize：当前分配的文件描述符插槽的数量。
+
+* 团体：补充小组名单。
+
+* NStgid：每个PID中的线程组ID（即PID）
+  其中[pid]是其成员的名称空间。最左边的条目
+  显示相对于PID命名空间的值
+  读取过程，接着是值
+  嵌套的内部命名空间。（从Linux 4.1开始）
+
+* NSpid：每个PID名称空间中的线程ID，其中
+   [pid]是其成员。这些字段按照NStgid排序。
+  （从Linux 4.1开始）
+
+* NSpgid：在每个PID名称空间中处理组ID
+  哪个[pid]是成员。这些字段按照Nst- 
+  gid排序。（从Linux 4.1开始）
+
+* NSsid：后代命名空间会话ID层次结构会话ID
+  在其中[pid]是其成员的每个PID名称空间中。
+  这些字段按照NStgid排序。（从Linux 4.1开始）
+
+* VmPeak：峰值虚拟内存大小。
+
+* VmSize：虚拟内存大小。
+
+* VmLck：锁定内存大小（请参阅mlock（3））。
+
+* VmPin：固定的内存大小（自Linux 3.2以来）。这些是
+  因某些需要而无法移动的页面
+  直接访问物理内存。
+
+* VmHWM：高峰居民组大小（“高水位”）。
+
+* VmRSS：居民组大小。请注意，这里的值是
+  总和RssAnon，RssFile和RssShmem。
+
+* RssAnon：驻留匿名内存的大小。（自Linux以来
+  4.5）。
+
+* RssFile：常驻文件映射的大小。（自Linux 4.5以来）。
+
+* RssShmem：驻留共享内存的大小（包括System V
+  共享内存，来自tmpfs（5）的映射和共享匿名
+  映射）。（自Linux 4.5以来）。
+
+* VmData，VmStk，VmExe：数据，堆栈和文本的大小seg-
+  发言：。
+
+* VmLib：共享库代码大小。
+
+* VmPTE：页表条目大小（自Linux 2.6.10起）。
+
+* VmPMD：第二级页面表的大小（自Linux 4.0开始）。
+
+* VmSwap：由匿名私人交换虚拟内存大小
+  页; 不包括shmem交换使用（因为Linux
+  2.6.34）。
+
+* HugetlbPages：hugetlb内存部分的大小。（自Linux以来
+  4.4）。
+
+* 线程数：包含这个的进程中的线程数
+  线。
+
+* SigQ：该字段包含两个以斜线分隔的数字
+  与排队信号有关的真实用户ID
+  处理。其中第一个是当前的数量
+  排队的信号为这个真实的用户ID，第二个是
+  对此的排队信号数量的资源限制
+  处理（参照的描述RLIMIT_SIGPENDING在
+   getrlimit（2） ）。
+
+* SigPnd，ShdPnd：线程和for的待处理信号的数量
+  作为一个整体（见pthreads（7）和signal（7））。
+
+* SigBlk，SigIgn，SigCgt：指示信号的掩码
+  被阻止，被忽略并被捕获（见信号（7））。
+
+* CapInh，CapPrm，CapEff：启用的功能掩码
+  可继承的，允许的和有效的集合（参见
+  能力（7））。
+
+* CapBnd：Capability Bounding集合（自Linux 2.6.26起，参见
+   能力（7））。
+
+* CapAmb：环境能力集（自Linux 4.3起，参见
+   能力（7））。
+
+* NoNewPrivs：no_new_privs位的值（自Linux 4.10开始，
+  参见prctl（2））。
+
+* Seccomp：进程的Seccomp模式（自Linux 3.8起，请参阅
+   seccomp（2））。0表示SECCOMP_MODE_DISABLED ; 1表示SEC- 
+  COMP_MODE_STRICT ; 2表示SECCOMP_MODE_FILTER。这个领域
+  仅当内核是在启用CON- 
+  FIG_SECCOMP内核配置选项的情况下生成的。
+
+* Cpus_allowed：可以运行此进程的CPU的掩码
+  （从Linux 2.6.24开始，请参阅cpuset（7））。
+
+* Cpus_allowed_list：与之前相同，但是以“列表格式”
+  （从Linux 2.6.26开始，请参阅cpuset（7））。
+
+* Mems_allowed：此进程允许的内存节点掩码
+  （从Linux 2.6.24开始，请参阅cpuset（7））。
+
+* Mems_allowed_list：与之前相同，但是以“列表格式”
+  （从Linux 2.6.26开始，请参阅cpuset（7））。
+
+* voluntary_ctxt_switches，nonvoluntary_ctxt_switches：号码
+  自愿和非自愿的上下文切换（自Linux以来
+  2.6.23）。
+</code></pre><p>1<br>10<br>1009<br>103<br>104<br>106<br>107<br>108<br>11<br>111<br>113<br>1134<br>12<br>129<br>13<br>1315<br>1323<br>1328<br>1333<br>1354<br>1359<br>1364<br>1366<br>137<br>1393<br>14<br>1401<br>1403<br>1407<br>1414<br>1436<br>1451<br>1455<br>1459<br>1463<br>1476<br>1485<br>1489<br>1494<br>1499<br>15<br>1521<br>1561<br>1572<br>1584<br>1588<br>1590<br>16<br>1602<br>1603<br>1605<br>1611<br>1622<br>1623<br>1626<br>1635<br>1650<br>1664<br>17<br>1725<br>18<br>185<br>186<br>19<br>2<br>2079<br>208<br>2090<br>21<br>218<br>22<br>2234<br>23<br>2367<br>237<br>24<br>25<br>26<br>27<br>28<br>298<br>3<br>3535<br>3873<br>3884<br>40<br>41<br>410<br>424<br>426<br>427<br>433<br>447<br>5<br>500<br>501<br>502<br>504<br>505<br>5099<br>5100<br>5102<br>5158<br>5160<br>548<br>5508<br>5509<br>5510<br>5512<br>5562<br>564<br>5705<br>5708<br>5714<br>5905<br>6018<br>6041<br>6050<br>611<br>617<br>628<br>635<br>693<br>695<br>7<br>723<br>731<br>735<br>74<br>75<br>76<br>8<br>9<br>915<br>936<br>968<br>980<br>997</p>
+<p>/proc/acpi<br>；</p>
+<p>/proc/asound</p>
+<p>/proc/buddyinfo<br>用于诊断内存碎片问题的相关信息文件；</p>
+<p>/proc/bus</p>
+<p>/cgroups</p>
+<p>/proc/cmdline<br>在启动时传递至内核的相关参数信息，这些信息通常由lilo或grub等启动管理工具进行传递；<br>/proc/consoles</p>
+<p>/proc/cpuinfo<br>处理器的相关信息的文件；</p>
+<p>/proc/crypto</p>
+<p>/proc/devices</p>
+<p>/proc/diskstats</p>
+<p>/proc/dma</p>
+<p>/proc/driver<br>driver<br>execdomains<br>fb<br>filesystems<br>fs<br>interrupts<br>iomem<br>ioports<br>irq<br>kallsyms<br>kcore<br>keys<br>key-users<br>kmsg<br>kpagecgroup<br>kpagecount<br>kpageflags<br>loadavg<br>locks<br>meminfo<br>misc<br>modules<br>mounts<br>mpt<br>mtrr<br>net<br>pagetypeinfo<br>partitions<br>sched_debug<br>schedstat<br>self<br>slabinfo<br>softirqs<br>stat<br>swaps<br>sys<br>sysrq-trigger<br>sysvipc<br>thread-self<br>timer_list<br>tty<br>uptime<br>version<br>vmallocinfo<br>vmstat<br>zoneinfo<br>…</p>
+<h2 id="proc的数据结构"><a href="#proc的数据结构" class="headerlink" title="proc的数据结构"></a>proc的数据结构</h2><p>与Ext2一样，proc大量使用了VFS数据结构，因为作为一种文件系统，它必须集成到内核的VFS抽象层中。但，毕竟proc只是用于获取内核的数据为主要目的，所以在其设计的过程中，遵循简单实用的特性，较Ext2简单。</p>
+<h2 id="proc文件系统API"><a href="#proc文件系统API" class="headerlink" title="proc文件系统API"></a>proc文件系统API</h2><p>内核为创建proc文件提供了一套API，相关API如下：</p>
+<p>struct proc_dir_entry <em>proc_mkdir(const char </em>name, struct proc_dir_entry *parent);</p>
+<p>该函数用于在proc文件系统中创建一个目录项，大多数时候，当我们期望实现自己的proc文件时，都要先创建一个自己的目录，然后在该目录里创建自己的文件，当然我们也可以直接在已经存在的proc文件系统目录里创建自己的文件。<br>该函数的各个参数含义如下：<br>name：该目录的名字<br>parent：该目录的父目录的名字<br>void proc_remove(struct proc_dir_entry <em>de);<br>该函数用于删除一个目录。<br>struct proc_dir_entry </em>proc_create(const char <em>name, umode_t mode, struct proc_dir_entry </em>parent, const struct file_operations <em>proc_fops);<br>该函数用于在proc文件系统中创建一个proc文件，其参数含义如下：<br>name：proc文件的名字，表现在proc文件系统中，就是文件的名字<br>mode：proc文件的访问模式，表现在proc文件系统中，就是文件的访问模式<br>parent：该proc文件所在的目录<br>proc_fops：指向用于操作该文件的文件操作的指针<br>这些参数提供了一个文件所需要的关键信息，包括文件名，访问模式，目录项（用于指定文件在文件系统中的位置），以及文件操作指针。<br>当要删除一个文件时，需要使用API：<br>void remove_proc_entry(const char </em>name, struct proc_dir_entry *parent)；<br>参数的含义是显然的，该函数用于从proc文件系统的指定目录删除指定的proc文件。还有一些其它的API，都定义在include/linux/prof_fs.h中。<br>在proc文件系统中创建文件或者目录时，最终都会调到proc_register，该函数会为新创建的文件或目录指定正确的file_operations和inode_operations，它们将在访问文件时被使用。</p>
+<h2 id="深入理解计算机系统"><a href="#深入理解计算机系统" class="headerlink" title="深入理解计算机系统"></a>深入理解计算机系统</h2><h2 id="操作系统原理"><a href="#操作系统原理" class="headerlink" title="操作系统原理"></a>操作系统原理</h2><h1 id="0x02-测试环境"><a href="#0x02-测试环境" class="headerlink" title="0x02-测试环境"></a>0x02-测试环境</h1><h2 id="硬件环境"><a href="#硬件环境" class="headerlink" title="硬件环境"></a>硬件环境</h2><h2 id="软件环境"><a href="#软件环境" class="headerlink" title="软件环境"></a>软件环境</h2><h1 id="0x03-方案设计"><a href="#0x03-方案设计" class="headerlink" title="0x03-方案设计"></a>0x03-方案设计</h1><h2 id="方案A"><a href="#方案A" class="headerlink" title="方案A"></a>方案A</h2><p>/proc目录下所有文件按目录形式复制出来，再进行选择性地提取有效信息。</p>
+<h2 id="方案B"><a href="#方案B" class="headerlink" title="方案B"></a>方案B</h2><p>手动导出</p>
+<h2 id="方案C"><a href="#方案C" class="headerlink" title="方案C"></a>方案C</h2><p>使用shell脚本直接提取目的信息，按合适格式导出到文档中。</p>
+<h2 id="方案D"><a href="#方案D" class="headerlink" title="方案D"></a>方案D</h2><p>通过内核模块获取目的信息，按合适格式导出到文档中。 </p>
+<h2 id="方案E"><a href="#方案E" class="headerlink" title="方案E"></a>方案E</h2><p>代码直接调用mysql API,</p>
+<h2 id="方案F"><a href="#方案F" class="headerlink" title="方案F"></a>方案F</h2><p>Node.js 直接调用系统API接口</p>
+<h1 id="0x04-实践验证"><a href="#0x04-实践验证" class="headerlink" title="0x04-实践验证"></a>0x04-实践验证</h1><h2 id="实践操作"><a href="#实践操作" class="headerlink" title="实践操作"></a>实践操作</h2><h2 id="实践结果"><a href="#实践结果" class="headerlink" title="实践结果"></a>实践结果</h2><h3 id="方案A-1"><a href="#方案A-1" class="headerlink" title="方案A"></a>方案A</h3><p>df -a   显示为0<br>ls -lh /proc/kcore<br>du -hs /proc/kcore<br>ls /proc/kcore -lh<br>hexdump（或od）<br>-r——– 1 root root 128T Jun 30 12:50 /proc/kcore</p>
+<p>/proc是伪文件系统，内核想报告多大就多大。又不用分配出来<br>不可行。</p>
+<h3 id="方案B-1"><a href="#方案B-1" class="headerlink" title="方案B"></a>方案B</h3><p>暂时先提取十条进程的信息<br>/proc/17256/stat</p>
+<p>1725 (gvfsd-metadata) S 693 1725 1725 0 -1 4194304 746 0 174 0 10 20 0 0 20 0 3 0 8235 198119424 479 18446744073709551615 94113580531712 94113580601292 140721845185440 0 0 0 0 4096 0 0 0 0 17 0 0 0 238 0 0 94113582698760 94113582702612 94113598459904 140721845193626 140721845193655 140721845193655 140721845194715 0<br>即：</p>
+<p>安装linux-header</p>
+<p>apt-get install -y linux-headers-$(uname -r)</p>
+<p>dmesg -C</p>
+<h1 id="0x05-总结分析"><a href="#0x05-总结分析" class="headerlink" title="0x05-总结分析"></a>0x05-总结分析</h1><h2 id="文章结论"><a href="#文章结论" class="headerlink" title="文章结论"></a>文章结论</h2><h2 id="文章分析"><a href="#文章分析" class="headerlink" title="文章分析"></a>文章分析</h2><h1 id="0x06-程序源码"><a href="#0x06-程序源码" class="headerlink" title="0x06-程序源码"></a>0x06-程序源码</h1><h2 id="代码A"><a href="#代码A" class="headerlink" title="代码A"></a>代码A</h2><h2 id="代码B"><a href="#代码B" class="headerlink" title="代码B"></a>代码B</h2><h1 id="0x07-参考资料"><a href="#0x07-参考资料" class="headerlink" title="0x07-参考资料"></a>0x07-参考资料</h1><ul>
+<li><a href="http://man7.org/linux/man-pages/man5/proc.5.html" target="_blank" rel="noopener">Linux Programmer’s Manual  PROC(5)</a></li>
+<li><a href="https://www.baidu.com" target="_blank" rel="noopener">百度一下</a></li>
+</ul>
+<h1 id="Markdown用法"><a href="#Markdown用法" class="headerlink" title="Markdown用法"></a>Markdown用法</h1><p><img src="https://www.zybuluo.com/static/img/logo.png" alt="cmd-markdown-logo"></p>
+<p>除了您现在看到的这个 Cmd Markdown 在线版本，您还可以前往以下网址下载：</p>
+<h3 id="Windows-Mac-Linux-全平台客户端"><a href="#Windows-Mac-Linux-全平台客户端" class="headerlink" title="Windows/Mac/Linux 全平台客户端"></a><a href="https://www.zybuluo.com/cmd/" target="_blank" rel="noopener">Windows/Mac/Linux 全平台客户端</a></h3><blockquote>
+<p>请保留此份 Cmd Markdown 的欢迎稿兼使用说明，如需撰写新稿件，点击顶部工具栏右侧的 <i class="icon-file"></i> <strong>新文稿</strong> 或者使用快捷键 <code>Ctrl+Alt+N</code>。</p>
+</blockquote>
+<hr>
+<h2 id="什么是-Markdown"><a href="#什么是-Markdown" class="headerlink" title="什么是 Markdown"></a>什么是 Markdown</h2><p>Markdown 是一种方便记忆、书写的纯文本标记语言，用户可以使用这些标记符号以最小的输入代价生成极富表现力的文档：譬如您正在阅读的这份文档。它使用简单的符号标记不同的标题，分割不同的段落，<strong>粗体</strong> 或者 <em>斜体</em> 某些文字，更棒的是，它还可以</p>
+<h3 id="1-制作一份待办事宜-Todo-列表"><a href="#1-制作一份待办事宜-Todo-列表" class="headerlink" title="1. 制作一份待办事宜 Todo 列表"></a>1. 制作一份待办事宜 <a href="https://www.zybuluo.com/mdeditor?url=https://www.zybuluo.com/static/editor/md-help.markdown#13-待办事宜-todo-列表" target="_blank" rel="noopener">Todo 列表</a></h3><ul>
+<li style="list-style: none"><input type="checkbox"> 支持以 PDF 格式导出文稿</li>
+<li style="list-style: none"><input type="checkbox"> 改进 Cmd 渲染算法，使用局部渲染技术提高渲染效率</li>
+<li style="list-style: none"><input type="checkbox" checked> 新增 Todo 列表功能</li>
+<li style="list-style: none"><input type="checkbox" checked> 修复 LaTex 公式渲染问题</li>
+<li style="list-style: none"><input type="checkbox" checked> 新增 LaTex 公式编号功能</li>
+</ul>
+<h3 id="2-书写一个质能守恒公式-LaTeX"><a href="#2-书写一个质能守恒公式-LaTeX" class="headerlink" title="2. 书写一个质能守恒公式[^LaTeX]"></a>2. 书写一个质能守恒公式[^LaTeX]</h3><p>$$E=mc^2$$</p>
+<h3 id="3-高亮一段代码-code"><a href="#3-高亮一段代码-code" class="headerlink" title="3. 高亮一段代码[^code]"></a>3. 高亮一段代码[^code]</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@requires_authorization</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">SomeClass</span>:</span></span><br><span class="line">    <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    <span class="comment"># A comment</span></span><br><span class="line">    <span class="keyword">print</span> <span class="string">'hello world'</span></span><br></pre></td></tr></table></figure>
+<h3 id="4-高效绘制-流程图"><a href="#4-高效绘制-流程图" class="headerlink" title="4. 高效绘制 流程图"></a>4. 高效绘制 <a href="https://www.zybuluo.com/mdeditor?url=https://www.zybuluo.com/static/editor/md-help.markdown#7-流程图" target="_blank" rel="noopener">流程图</a></h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">st=&gt;start: Start</span><br><span class="line">op=&gt;operation: Your Operation</span><br><span class="line">cond=&gt;condition: Yes or No?</span><br><span class="line">e=&gt;end</span><br><span class="line"></span><br><span class="line">st-&gt;op-&gt;cond</span><br><span class="line">cond(yes)-&gt;e</span><br><span class="line">cond(no)-&gt;op</span><br></pre></td></tr></table></figure>
+<h3 id="5-高效绘制-序列图"><a href="#5-高效绘制-序列图" class="headerlink" title="5. 高效绘制 序列图"></a>5. 高效绘制 <a href="https://www.zybuluo.com/mdeditor?url=https://www.zybuluo.com/static/editor/md-help.markdown#8-序列图" target="_blank" rel="noopener">序列图</a></h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Alice-&gt;Bob: Hello Bob, how are you?</span><br><span class="line">Note right of Bob: Bob thinks</span><br><span class="line">Bob--&gt;Alice: I am good thanks!</span><br></pre></td></tr></table></figure>
+<h3 id="6-高效绘制-甘特图"><a href="#6-高效绘制-甘特图" class="headerlink" title="6. 高效绘制 甘特图"></a>6. 高效绘制 <a href="https://www.zybuluo.com/mdeditor?url=https://www.zybuluo.com/static/editor/md-help.markdown#9-甘特图" target="_blank" rel="noopener">甘特图</a></h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">title 项目开发流程</span><br><span class="line">section 项目确定</span><br><span class="line">    需求分析       :a1, 2016-06-22, 3d</span><br><span class="line">    可行性报告     :after a1, 5d</span><br><span class="line">    概念验证       : 5d</span><br><span class="line">section 项目实施</span><br><span class="line">    概要设计      :2016-07-05  , 5d</span><br><span class="line">    详细设计      :2016-07-08, 10d</span><br><span class="line">    编码          :2016-07-15, 10d</span><br><span class="line">    测试          :2016-07-22, 5d</span><br><span class="line">section 发布验收</span><br><span class="line">    发布: 2d</span><br><span class="line">    验收: 3d</span><br></pre></td></tr></table></figure>
+<h3 id="7-绘制表格"><a href="#7-绘制表格" class="headerlink" title="7. 绘制表格"></a>7. 绘制表格</h3><table>
+<thead>
+<tr>
+<th>项目</th>
+<th style="text-align:right">价格</th>
+<th style="text-align:center">数量</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>计算机</td>
+<td style="text-align:right">\$1600</td>
+<td style="text-align:center">5</td>
+</tr>
+<tr>
+<td>手机</td>
+<td style="text-align:right">\$12</td>
+<td style="text-align:center">12</td>
+</tr>
+<tr>
+<td>管线</td>
+<td style="text-align:right">\$1</td>
+<td style="text-align:center">234</td>
+</tr>
+</tbody>
+</table>
+<h3 id="8-更详细语法说明"><a href="#8-更详细语法说明" class="headerlink" title="8. 更详细语法说明"></a>8. 更详细语法说明</h3><p>想要查看更详细的语法说明，可以参考我们准备的 <a href="https://www.zybuluo.com/mdeditor?url=https://www.zybuluo.com/static/editor/md-help.markdown" target="_blank" rel="noopener">Cmd Markdown 简明语法手册</a>，进阶用户可以参考 <a href="https://www.zybuluo.com/mdeditor?url=https://www.zybuluo.com/static/editor/md-help.markdown#cmd-markdown-高阶语法手册" target="_blank" rel="noopener">Cmd Markdown 高阶语法手册</a> 了解更多高级功能。</p>
+<p>总而言之，不同于其它 <em>所见即所得</em> 的编辑器：你只需使用键盘专注于书写文本内容，就可以生成印刷级的排版格式，省却在键盘和工具栏之间来回切换，调整内容和格式的麻烦。<strong>Markdown 在流畅的书写和印刷级的阅读体验之间找到了平衡。</strong> 目前它已经成为世界上最大的技术分享网站 GitHub 和 技术问答网站 StackOverFlow 的御用书写格式。</p>
+<hr>
+<h2 id="什么是-Cmd-Markdown"><a href="#什么是-Cmd-Markdown" class="headerlink" title="什么是 Cmd Markdown"></a>什么是 Cmd Markdown</h2><p>您可以使用很多工具书写 Markdown，但是 Cmd Markdown 是这个星球上我们已知的、最好的 Markdown 工具——没有之一 ：）因为深信文字的力量，所以我们和你一样，对流畅书写，分享思想和知识，以及阅读体验有极致的追求，我们把对于这些诉求的回应整合在 Cmd Markdown，并且一次，两次，三次，乃至无数次地提升这个工具的体验，最终将它演化成一个 <strong>编辑/发布/阅读</strong> Markdown 的在线平台——您可以在任何地方，任何系统/设备上管理这里的文字。</p>
+<h3 id="1-实时同步预览"><a href="#1-实时同步预览" class="headerlink" title="1. 实时同步预览"></a>1. 实时同步预览</h3><p>我们将 Cmd Markdown 的主界面一分为二，左边为<strong>编辑区</strong>，右边为<strong>预览区</strong>，在编辑区的操作会实时地渲染到预览区方便查看最终的版面效果，并且如果你在其中一个区拖动滚动条，我们有一个巧妙的算法把另一个区的滚动条同步到等价的位置，超酷！</p>
+<h3 id="2-编辑工具栏"><a href="#2-编辑工具栏" class="headerlink" title="2. 编辑工具栏"></a>2. 编辑工具栏</h3><p>也许您还是一个 Markdown 语法的新手，在您完全熟悉它之前，我们在 <strong>编辑区</strong> 的顶部放置了一个如下图所示的工具栏，您可以使用鼠标在工具栏上调整格式，不过我们仍旧鼓励你使用键盘标记格式，提高书写的流畅度。</p>
+<p><img src="https://www.zybuluo.com/static/img/toolbar-editor.png" alt="tool-editor"></p>
+<h3 id="3-编辑模式"><a href="#3-编辑模式" class="headerlink" title="3. 编辑模式"></a>3. 编辑模式</h3><p>完全心无旁骛的方式编辑文字：点击 <strong>编辑工具栏</strong> 最右侧的拉伸按钮或者按下 <code>Ctrl + M</code>，将 Cmd Markdown 切换到独立的编辑模式，这是一个极度简洁的写作环境，所有可能会引起分心的元素都已经被挪除，超清爽！</p>
+<h3 id="4-实时的云端文稿"><a href="#4-实时的云端文稿" class="headerlink" title="4. 实时的云端文稿"></a>4. 实时的云端文稿</h3><p>为了保障数据安全，Cmd Markdown 会将您每一次击键的内容保存至云端，同时在 <strong>编辑工具栏</strong> 的最右侧提示 <code>已保存</code> 的字样。无需担心浏览器崩溃，机器掉电或者地震，海啸——在编辑的过程中随时关闭浏览器或者机器，下一次回到 Cmd Markdown 的时候继续写作。</p>
+<h3 id="5-离线模式"><a href="#5-离线模式" class="headerlink" title="5. 离线模式"></a>5. 离线模式</h3><p>在网络环境不稳定的情况下记录文字一样很安全！在您写作的时候，如果电脑突然失去网络连接，Cmd Markdown 会智能切换至离线模式，将您后续键入的文字保存在本地，直到网络恢复再将他们传送至云端，即使在网络恢复前关闭浏览器或者电脑，一样没有问题，等到下次开启 Cmd Markdown 的时候，她会提醒您将离线保存的文字传送至云端。简而言之，我们尽最大的努力保障您文字的安全。</p>
+<h3 id="6-管理工具栏"><a href="#6-管理工具栏" class="headerlink" title="6. 管理工具栏"></a>6. 管理工具栏</h3><p>为了便于管理您的文稿，在 <strong>预览区</strong> 的顶部放置了如下所示的 <strong>管理工具栏</strong>：</p>
+<p><img src="https://www.zybuluo.com/static/img/toolbar-manager.jpg" alt="tool-manager"></p>
+<p>通过管理工具栏可以：</p>
+<p><i class="icon-share"></i> 发布：将当前的文稿生成固定链接，在网络上发布，分享<br><i class="icon-file"></i> 新建：开始撰写一篇新的文稿<br><i class="icon-trash"></i> 删除：删除当前的文稿<br><i class="icon-cloud"></i> 导出：将当前的文稿转化为 Markdown 文本或者 Html 格式，并导出到本地<br><i class="icon-reorder"></i> 列表：所有新增和过往的文稿都可以在这里查看、操作<br><i class="icon-pencil"></i> 模式：切换 普通/Vim/Emacs 编辑模式</p>
+<h3 id="7-阅读工具栏"><a href="#7-阅读工具栏" class="headerlink" title="7. 阅读工具栏"></a>7. 阅读工具栏</h3><p><img src="https://www.zybuluo.com/static/img/toolbar-reader.jpg" alt="tool-manager"></p>
+<p>通过 <strong>预览区</strong> 右上角的 <strong>阅读工具栏</strong>，可以查看当前文稿的目录并增强阅读体验。</p>
+<p>工具栏上的五个图标依次为：</p>
+<p><i class="icon-list"></i> 目录：快速导航当前文稿的目录结构以跳转到感兴趣的段落<br><i class="icon-chevron-sign-left"></i> 视图：互换左边编辑区和右边预览区的位置<br><i class="icon-adjust"></i> 主题：内置了黑白两种模式的主题，试试 <strong>黑色主题</strong>，超炫！<br><i class="icon-desktop"></i> 阅读：心无旁骛的阅读模式提供超一流的阅读体验<br><i class="icon-fullscreen"></i> 全屏：简洁，简洁，再简洁，一个完全沉浸式的写作和阅读环境</p>
+<h3 id="8-阅读模式"><a href="#8-阅读模式" class="headerlink" title="8. 阅读模式"></a>8. 阅读模式</h3><p>在 <strong>阅读工具栏</strong> 点击 <i class="icon-desktop"></i> 或者按下 <code>Ctrl+Alt+M</code> 随即进入独立的阅读模式界面，我们在版面渲染上的每一个细节：字体，字号，行间距，前背景色都倾注了大量的时间，努力提升阅读的体验和品质。</p>
+<h3 id="9-标签、分类和搜索"><a href="#9-标签、分类和搜索" class="headerlink" title="9. 标签、分类和搜索"></a>9. 标签、分类和搜索</h3><p>在编辑区任意行首位置输入以下格式的文字可以标签当前文档：</p>
+<p>标签： 未分类</p>
+<p>标签以后的文稿在【文件列表】（Ctrl+Alt+F）里会按照标签分类，用户可以同时使用键盘或者鼠标浏览查看，或者在【文件列表】的搜索文本框内搜索标题关键字过滤文稿，如下图所示：</p>
+<p><img src="https://www.zybuluo.com/static/img/file-list.png" alt="file-list"></p>
+<h3 id="10-文稿发布和分享"><a href="#10-文稿发布和分享" class="headerlink" title="10. 文稿发布和分享"></a>10. 文稿发布和分享</h3><p>在您使用 Cmd Markdown 记录，创作，整理，阅读文稿的同时，我们不仅希望它是一个有力的工具，更希望您的思想和知识通过这个平台，连同优质的阅读体验，将他们分享给有相同志趣的人，进而鼓励更多的人来到这里记录分享他们的思想和知识，尝试点击 <i class="icon-share"></i> (Ctrl+Alt+P) 发布这份文档给好友吧！</p>
+<hr>
+<p>再一次感谢您花费时间阅读这份欢迎稿，点击 <i class="icon-file"></i> (Ctrl+Alt+N) 开始撰写新的文稿吧！祝您在这里记录、阅读、分享愉快！</p>
+<p>作者 <a href="http://weibo.com/ghosert" target="_blank" rel="noopener">@ghosert</a><br>2016 年 07月 07日    </p>
+<p>[^LaTeX]: 支持 <strong>LaTeX</strong> 编辑显示支持，例如：$\sum_{i=1}^n a_i=0$，<br> 访问 <a href="http://meta.math.stackexchange.com/questions/5020/mathjax-basic-tutorial-and-quick-reference" target="_blank" rel="noopener">MathJax</a> 参考更多使用方法。</p>
+<p>[^code]: 代码高亮功能支持包括 Java, Python, JavaScript 在内的，<strong>四十一</strong>种主流编程语言。</p>
+<h1 id="0x05-参考资料"><a href="#0x05-参考资料" class="headerlink" title="0x05-参考资料"></a>0x05-参考资料</h1><p>Linux下Proc文件系统的编程剖析_郭松<br><a href="http://kns.cnki.net/KCMS/detail/detail.aspx?dbcode=CJFQ&amp;dbname=CJFD2010&amp;filename=HQDB201005010&amp;uid=WEEvREcwSlJHSldRa1FhcTdWajFtZk1DY3hvZmUvYk10TGtFRmcwaDkyTT0=$9A4hF_YAuvQ5obgVAqNKPCYcEjKensW4ggI8Fm4gTkoUKaID8j8gFw!!&amp;v=MjA1NzN5RGxVN3pJTFR6UGJMRzRIOUhNcW85RVpJUjhlWDFMdXhZUzdEaDFUM3FUcldNMUZyQ1VSTEtmWWVSb0Y=" target="_blank" rel="noopener">http://kns.cnki.net/KCMS/detail/detail.aspx?dbcode=CJFQ&amp;dbname=CJFD2010&amp;filename=HQDB201005010&amp;uid=WEEvREcwSlJHSldRa1FhcTdWajFtZk1DY3hvZmUvYk10TGtFRmcwaDkyTT0=$9A4hF_YAuvQ5obgVAqNKPCYcEjKensW4ggI8Fm4gTkoUKaID8j8gFw!!&amp;v=MjA1NzN5RGxVN3pJTFR6UGJMRzRIOUhNcW85RVpJUjhlWDFMdXhZUzdEaDFUM3FUcldNMUZyQ1VSTEtmWWVSb0Y=</a></p>
+</div><div class="tags"></div><div class="post-share"></div><div class="post-nav"><a href="/2018/08/03/日志分析及数据库表的设计/" class="pre"></a><a href="/2018/07/31/Electron应用开发/" class="next"></a></div><div id="comments"></div></div></div></div><div class="layout-r"><div id="sidebar"><div class="search-pla"></div><div id="toc" class="widget"><div class="widget-title"><i class="fa fa-fei">Contents</i></div><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Linux-proc目录下信息提取"><span class="toc-text">Linux /proc目录下信息提取</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2018-6-25-2018-7-1"><span class="toc-text">2018-6-25~2018-7-1</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#标签：-Linux"><span class="toc-text">标签： Linux</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x00-文章前言"><span class="toc-text">0x00-文章前言</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#文章目的"><span class="toc-text">文章目的</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#文章前景"><span class="toc-text">文章前景</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x01-知识储备"><span class="toc-text">0x01-知识储备</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#proc文件系统简介"><span class="toc-text">proc文件系统简介</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#proc目录中的常见文件介绍"><span class="toc-text">proc目录中的常见文件介绍</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#proc目录中包含许多以数字命名的子目录，这些数字表示系统当前正在运行进程的进程号，里面包含对应进程相关的多个信息文件。"><span class="toc-text">/proc目录中包含许多以数字命名的子目录，这些数字表示系统当前正在运行进程的进程号，里面包含对应进程相关的多个信息文件。</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#proc的数据结构"><span class="toc-text">proc的数据结构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#proc文件系统API"><span class="toc-text">proc文件系统API</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#深入理解计算机系统"><span class="toc-text">深入理解计算机系统</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#操作系统原理"><span class="toc-text">操作系统原理</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x02-测试环境"><span class="toc-text">0x02-测试环境</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#硬件环境"><span class="toc-text">硬件环境</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#软件环境"><span class="toc-text">软件环境</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x03-方案设计"><span class="toc-text">0x03-方案设计</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#方案A"><span class="toc-text">方案A</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#方案B"><span class="toc-text">方案B</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#方案C"><span class="toc-text">方案C</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#方案D"><span class="toc-text">方案D</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#方案E"><span class="toc-text">方案E</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#方案F"><span class="toc-text">方案F</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x04-实践验证"><span class="toc-text">0x04-实践验证</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#实践操作"><span class="toc-text">实践操作</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#实践结果"><span class="toc-text">实践结果</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#方案A-1"><span class="toc-text">方案A</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#方案B-1"><span class="toc-text">方案B</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x05-总结分析"><span class="toc-text">0x05-总结分析</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#文章结论"><span class="toc-text">文章结论</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#文章分析"><span class="toc-text">文章分析</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x06-程序源码"><span class="toc-text">0x06-程序源码</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#代码A"><span class="toc-text">代码A</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#代码B"><span class="toc-text">代码B</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x07-参考资料"><span class="toc-text">0x07-参考资料</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Markdown用法"><span class="toc-text">Markdown用法</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Windows-Mac-Linux-全平台客户端"><span class="toc-text">Windows/Mac/Linux 全平台客户端</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#什么是-Markdown"><span class="toc-text">什么是 Markdown</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-制作一份待办事宜-Todo-列表"><span class="toc-text">1. 制作一份待办事宜 Todo 列表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-书写一个质能守恒公式-LaTeX"><span class="toc-text">2. 书写一个质能守恒公式[^LaTeX]</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-高亮一段代码-code"><span class="toc-text">3. 高亮一段代码[^code]</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-高效绘制-流程图"><span class="toc-text">4. 高效绘制 流程图</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-高效绘制-序列图"><span class="toc-text">5. 高效绘制 序列图</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-高效绘制-甘特图"><span class="toc-text">6. 高效绘制 甘特图</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-绘制表格"><span class="toc-text">7. 绘制表格</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-更详细语法说明"><span class="toc-text">8. 更详细语法说明</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#什么是-Cmd-Markdown"><span class="toc-text">什么是 Cmd Markdown</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-实时同步预览"><span class="toc-text">1. 实时同步预览</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-编辑工具栏"><span class="toc-text">2. 编辑工具栏</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-编辑模式"><span class="toc-text">3. 编辑模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-实时的云端文稿"><span class="toc-text">4. 实时的云端文稿</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-离线模式"><span class="toc-text">5. 离线模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-管理工具栏"><span class="toc-text">6. 管理工具栏</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-阅读工具栏"><span class="toc-text">7. 阅读工具栏</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-阅读模式"><span class="toc-text">8. 阅读模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9-标签、分类和搜索"><span class="toc-text">9. 标签、分类和搜索</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#10-文稿发布和分享"><span class="toc-text">10. 文稿发布和分享</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x05-参考资料"><span class="toc-text">0x05-参考资料</span></a></li></ol></div><div class="widget"><div class="widget-title"><i class="fa fa-xie"> Recent</i></div><ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2018/08/08/FAQ/">FAQ</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/03/简单的linux设备驱动程序/">简单的linux设备驱动程序</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/03/日志分析及数据库表的设计/">日志分析及数据库表的设计</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/31/proc目录下信息提取/">proc目录下信息提取</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/31/Electron应用开发/">Electron应用开发</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/31/BlurAdmin模板学习/">BlurAdmin模板学习</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/31/Electron开发流程/">Electron开发流程</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/30/PostgreSQL操作接口/">PostgreSQL操作接口</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/29/PostgreSQL语法学习/">PostgreSQL语法学习</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/29/PostgreSQL环境搭建/">PostgreSQL环境搭建</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-biao"> Tags</i></div><div class="tagcloud"><a href="/tags/安全/" style="font-size: 15px;">安全</a> <a href="/tags/旧事/" style="font-size: 15px;">旧事</a> <a href="/tags/博客/" style="font-size: 15px;">博客</a> <a href="/tags/Kernel/" style="font-size: 15px;">Kernel</a> <a href="/tags/操作系统/" style="font-size: 15px;">操作系统</a> <a href="/tags/红线/" style="font-size: 15px;">红线</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-archive"> Archive</i></div><ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/08/">August 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/07/">July 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/04/">April 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/03/">March 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/06/">June 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/05/">May 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/04/">April 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/03/">March 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04/">April 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/03/">March 2014</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-you"> Blogroll</i></div><ul></ul><a href="http://www.example1.com/" title="site-name1" target="_blank">site-name1</a><ul></ul><a href="http://www.example2.com/" title="site-name2" target="_blank">site-name2</a><ul></ul><a href="http://www.example3.com/" title="site-name3" target="_blank">site-name3</a></div></div></div></div><a id="totop" href="#top"></a><div id="footer"><div class="footer-info"><p><a href="/baidusitemap.xml">Baidu Site Haritası</a> |  <a href="/atom.xml">RSS</a> |  <a href="/about/">About</a></p><p>本站总访问量：<i id="busuanzi_container_site_pv"><i id="busuanzi_value_site_pv"></i></i>次</p><p><span> Copyright &copy;<a href="/." rel="nofollow">xiafei-xupt.</a></span><span> Theme by<a rel="nofollow" target="_blank" href="https://github.com/chaooo/hexo-theme-BlueLake"> BlueLake.</a></span><span> Count by<a href="http://busuanzi.ibruce.info/"> busuanzi.</a></span><span> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a></span></p></div></div></div><script src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js" async></script><script type="text/javascript" src="/js/search.json.js?v=2.0.1"></script><script type="text/javascript" src="/js/toctotop.js?v=2.0.1" async></script></body></html>

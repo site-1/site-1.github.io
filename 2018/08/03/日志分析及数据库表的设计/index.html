@@ -1,0 +1,172 @@
+<!DOCTYPE html><html lang="en"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description"><title> | xiafei-xupt's blog</title><link rel="stylesheet" type="text/css" href="//fonts.css.network/css?family=Source+Code+Pro"><link rel="stylesheet" type="text/css" href="/css/style.css?v=2.0.1"><link rel="stylesheet" type="text/css" href="/css/highlight.css?v=2.0.1"><link rel="Shortcut Icon" href="/favicon.ico"><link rel="bookmark" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><link rel="alternate" type="application/atom+xml" href="/atom.xml"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">xiafei-xupt's blog</h1><a id="logo" href="/.">xiafei-xupt's blog</a><p class="description">汝之意志所向,即吾剑之所指</p></div><div id="nav-menu"><a href="/." class="current"><i class="fa fa-home"> Home</i></a><a href="/about/"><i class="fa fa-user"> About</i></a><a href="/atom.xml"><i class="fa fa-rss"> RSS</i></a></div><div id="search-form"><div id="result-mask" class="hide"></div><label><input id="search-key" type="text" autocomplete="off" placeholder="Arama"></label><div id="result-wrap" class="hide"><div id="search-result"></div></div><div class="hide"><template id="search-tpl"><div class="item"><a href="/{path}" title="{title}"><div class="title">{title}</div><div class="time">{date}</div><div class="tags">{tags}</div></a></div></template></div></div></div><div id="layout" class="layout-g"><div class="layout-l"><div class="content_container"><div class="post"><h1 class="post-title"></h1><div class="post-meta"><a href="/2018/08/03/日志分析及数据库表的设计/#comments" class="comment-count"></a><p><span class="date">Aug 03, 2018</span><span><i id="busuanzi_container_page_pv"><i id="busuanzi_value_page_pv"></i><i>Hits</i></i></span></p></div><div class="post-content"><h1 id="日志分析及数据库表的设计"><a href="#日志分析及数据库表的设计" class="headerlink" title="日志分析及数据库表的设计"></a>日志分析及数据库表的设计</h1><h3 id="2018年7月30日-2018年8月6日"><a href="#2018年7月30日-2018年8月6日" class="headerlink" title="2018年7月30日~2018年8月6日"></a>2018年7月30日~2018年8月6日</h3><h2 id="标签：-PostgreSQL"><a href="#标签：-PostgreSQL" class="headerlink" title="标签： PostgreSQL  "></a>标签： PostgreSQL  </h2><p>赵岩、吕夏飞——2018-08-02——项目周报告——日志分析及数据库表的设计</p>
+<h1 id="项目要求"><a href="#项目要求" class="headerlink" title="项目要求"></a>项目要求</h1><h2 id="日志分析"><a href="#日志分析" class="headerlink" title="日志分析"></a>日志分析</h2><p>大量日志情况下，写程序（服务形式），定期不断产生日志消息，写入数据库。消息内容至少包括有主机分组、主机id、日志时间、日志类型、日志等级、日志消息。</p>
+<h2 id="数据库设计"><a href="#数据库设计" class="headerlink" title="数据库设计"></a>数据库设计</h2><p>在大量的电脑日志情况下，HTML应用对日志进行条件查询、分析、产生各类型报表。数据库设计要依照数据参考和数据展示来进行设计。</p>
+<h2 id="数据操作"><a href="#数据操作" class="headerlink" title="数据操作"></a>数据操作</h2><ol>
+<li>在产生大量日志数据的情况下需要项数据库中写入这些数据，而要写入的数据不止日志消息。要知道是哪台计算机产生的日志消息，需要主机的id和主机的分组，而产生的日志包括日志的类型、日志等级、和日志的消息内容，还有日志产生的时间。</li>
+<li>在测试阶段，需要把日志的信息写入数据库即有一个数据库表的插入操作，此操作只需要在后台实现，利用postgreSQL数据库桌面工具写入测试数据。还有一个数据查询操作，此操作需要在HTML界面进行展示，将查询的数据通过整合，按照一定的要求进行展示。</li>
+</ol>
+<h1 id="知识储备"><a href="#知识储备" class="headerlink" title="知识储备"></a>知识储备</h1><h2 id="数据库简介"><a href="#数据库简介" class="headerlink" title="数据库简介"></a>数据库简介</h2><p>数据库可以实现数据共享、减少数据的冗余度、提高数据的独立性、使得数据实现集中控制、增加数据一致性和可维护性、有利于数据的故障恢复。</p>
+<h2 id="PostgreSQL基础"><a href="#PostgreSQL基础" class="headerlink" title="PostgreSQL基础"></a>PostgreSQL基础</h2><ul>
+<li>PostgreSQL是一个功能强大的开源对象关系数据库系统，它使用并扩展了SQL语言，并结合了许多安全存储和扩展最复杂数据工作负载的功能。</li>
+<li>PostgreSQL的起源可以追溯到1986年，作为加州大学伯克利分校POSTGRES项目的一部分，并在核心平台上进行了30多年的积极开发。</li>
+<li>PostgreSQL凭借其经过验证的架构，可靠性，数据完整性，强大的功能集，可扩展性以及软件背后的开源社区的奉献精神赢得了良好的声誉，以始终如一地提供高性能和创新的解决方案。</li>
+<li>PostgreSQL在所有主要操作系统上运行，自2001年以来一直是符合ACID标准的，并且具有强大的附加功能，例如流行的PostGIS地理空间数据库扩展器。毫无疑问，PostgreSQL已经成为许多人和组织的首选开源关系数据库。</li>
+</ul>
+<h2 id="数据库视图"><a href="#数据库视图" class="headerlink" title="数据库视图"></a>数据库视图</h2><h3 id="视图的概述"><a href="#视图的概述" class="headerlink" title="视图的概述"></a>视图的概述</h3><p>视图是从一个或者多个表中导出的，它的行为与表非常相似，但视图是一个虚拟表。在视图中，用户可以使用SELECT语句查询语句，以及使用INSERT、UPDATE、和DELETE语句修改记录。在PostgreSQL中，使用视图可以使用户操作方便，而且可以保障数据库系统的安全。<br>我们通过视图看到的数据只是存放在基本表中的数据。当对通过视图看到的数据进行修改时，相应的基本表的数据也要发生变化，同时，若基本表的数据发生变化，则这种变化也可以自动地反映到视图中。</p>
+<h3 id="视图的作用"><a href="#视图的作用" class="headerlink" title="视图的作用"></a>视图的作用</h3><p>与直接从数据库表中读取数据相比，视图具有以下优点：</p>
+<ol>
+<li>简单化<br>看到的就是需要的。视图不仅可以简单化用户对数据的理解，也可以简化他们的操作。那些经常使用的查询可以被定义为视图，从而使得用户不必为以后的操作每次指定全部的条件。</li>
+<li>安全性<br>通过视图，用户只能查询和修改他们所能见到的数据。数据库中的其他数据则既看不见、也取不到。数据库授权命令可以使每个用户对数据库的检索限制到特定的数据库对象上，但不能授权到数据库特殊的行和特殊的列上。通过视图，用户可以被限制在数据的不同子集上，如下：<br>● 使用权限可被限制在基表的行的子集上。<br>● 使用权限可被限制在基表的列的子集上。<br>● 使用权限可被限制在基表的行和列的子集上。<br>● 使用权限可被限制在多个基表的连接所限定的行上。<br>● 使用权限可被限制在基表中的数据的统计汇总上。<br>● 使用权限可被限制在另一视图的一个子集上，或是一些视图和基表合并后的子集上。</li>
+<li>逻辑数据独立性<br>视图可以帮助用户屏蔽真实表结构变化带来的影响。</li>
+</ol>
+<h1 id="数据库表设计"><a href="#数据库表设计" class="headerlink" title="数据库表设计"></a>数据库表设计</h1><h2 id="数据库表的设计"><a href="#数据库表的设计" class="headerlink" title="数据库表的设计"></a>数据库表的设计</h2><p>根据提供的数据进行分析，由于现阶段只是前期的测试阶段，所采用的数据不是最终的数据，只是项目测试需要的数据，而且日志又分了等级和类型，主机也有自己的分组，我就考虑将主机分组、日志类型和日志等级分别建表，便于以后的修改，于是乎就一共有四张表产生。<br>分别为：日志表、类型表、等级表和主机分组表（红色下划线表示主键，蓝色下划线表示外键）</p>
+<ol>
+<li>类型表（<font color="#DC143C">日志类型</font>、类型名称）</li>
+<li>等级表（<font color="#DC143C">日志等级</font>、等级名称）</li>
+<li>主机分组表（<font color="#DC143C">主机分组</font>、分组名称）</li>
+<li>日志表（<font color="#DC143C">主机id</font>、<font color="#0000FF">日志类型</font>、<font color="#0000FF">日志等级</font>、日志时间、日志消息、<font color="#0000FF">主机分组</font>）</li>
+</ol>
+<h2 id="字段类型设计"><a href="#字段类型设计" class="headerlink" title="字段类型设计"></a>字段类型设计</h2><p>其中各个表的字段大多对应的是计算机产生的数据，大多数应为字符串，字段的对应的类型再次设置为 character varying ，这个类型为可变长的字符串型，日志时间设置为date类型。</p>
+<h1 id="测试环境"><a href="#测试环境" class="headerlink" title="测试环境"></a>测试环境</h1><h2 id="硬件"><a href="#硬件" class="headerlink" title="硬件"></a>硬件</h2><ul>
+<li>处理器：i7</li>
+<li>内存：8G</li>
+<li>显示器：VGA 或更高</li>
+<li>硬盘空间：128G</li>
+</ul>
+<h2 id="软件"><a href="#软件" class="headerlink" title="软件"></a>软件</h2><ul>
+<li>Windows 10系统</li>
+<li>Debian 9系统</li>
+<li>PostgreSQL</li>
+</ul>
+<p><strong>注：</strong>由于PostgreSQL操作使用pgAdmin实现，而Windows 10系统使用pgAdmin 4，Debian 9系统使用pgAdmin3，两者几乎完全一样，故此处只在Windows 10系统上进行测试</p>
+<h1 id="创建数据库表"><a href="#创建数据库表" class="headerlink" title="创建数据库表"></a>创建数据库表</h1><h2 id="类型表的创建语句"><a href="#类型表的创建语句" class="headerlink" title="类型表的创建语句"></a>类型表的创建语句</h2><pre><code>CREATE TABLE public.&quot;Class&quot;
+(
+&quot;日志类型&quot; character varying COLLATE pg_catalog.&quot;default&quot; NOT NULL,
+&quot;类型名称&quot; character varying COLLATE pg_catalog.&quot;default&quot; NOT NULL,
+CONSTRAINT &quot;Class_pkey&quot; PRIMARY KEY (&quot;日志类型&quot;)
+)
+WITH (
+OIDS = FALSE
+)
+TABLESPACE pg_default;
+
+ALTER TABLE public.&quot;Class&quot;
+OWNER to postgres;
+</code></pre><p><img src="/assets/blogImg/微信图片_20180803133913.png" alt=""></p>
+<h2 id="等级表的创建语句"><a href="#等级表的创建语句" class="headerlink" title="等级表的创建语句"></a>等级表的创建语句</h2><pre><code>CREATE TABLE public.&quot;Grade&quot;
+(
+&quot;日志等级&quot; character varying COLLATE pg_catalog.&quot;default&quot; NOT NULL,
+&quot;等级名称&quot; character varying COLLATE pg_catalog.&quot;default&quot; NOT NULL,
+CONSTRAINT &quot;Grade_pkey&quot; PRIMARY KEY (&quot;日志等级&quot;)
+)
+WITH (
+OIDS = FALSE
+)
+TABLESPACE pg_default;
+
+ALTER TABLE public.&quot;Grade&quot;
+OWNER to postgres;
+</code></pre><p><img src="/assets/blogImg/微信图片_20180803134026.png" alt=""></p>
+<h2 id="主机分组表的创建语句"><a href="#主机分组表的创建语句" class="headerlink" title="主机分组表的创建语句"></a>主机分组表的创建语句</h2><pre><code>CREATE TABLE public.&quot;Group&quot;
+(
+&quot;主机分组&quot; character varying COLLATE pg_catalog.&quot;default&quot; NOT NULL,
+&quot;分组名称&quot; character varying COLLATE pg_catalog.&quot;default&quot; NOT NULL,
+CONSTRAINT &quot;Group_pkey&quot; PRIMARY KEY (&quot;主机分组&quot;)
+)
+WITH (
+OIDS = FALSE
+)
+TABLESPACE pg_default;
+
+ALTER TABLE public.&quot;Group&quot;
+OWNER to postgres;
+</code></pre><p><img src="/assets/blogImg/微信图片_20180803134304.png" alt=""></p>
+<h2 id="日志表创建语句"><a href="#日志表创建语句" class="headerlink" title="日志表创建语句"></a>日志表创建语句</h2><pre><code>CREATE TABLE public.&quot;Mess&quot;
+(
+&quot;主机id&quot; character varying COLLATE pg_catalog.&quot;default&quot; NOT NULL,
+&quot;日志类型&quot; character varying COLLATE pg_catalog.&quot;default&quot; NOT NULL,
+&quot;日志等级&quot; character varying COLLATE pg_catalog.&quot;default&quot; NOT NULL,
+&quot;日志时间&quot; date NOT NULL,
+&quot;日志消息&quot; character varying COLLATE pg_catalog.&quot;default&quot; NOT NULL,
+&quot;主机分组&quot; character varying COLLATE pg_catalog.&quot;default&quot; NOT NULL,
+CONSTRAINT &quot;Mess_pkey&quot; PRIMARY KEY (&quot;主机id&quot;),
+CONSTRAINT &quot;CFkey&quot; FOREIGN KEY (&quot;日志类型&quot;)
+REFERENCES public.&quot;Class&quot; (&quot;日志类型&quot;) MATCH FULL
+ON UPDATE NO ACTION
+ON DELETE NO ACTION
+DEFERRABLE INITIALLY DEFERRED
+NOT VALID,
+CONSTRAINT &quot;Fkey&quot; FOREIGN KEY (&quot;主机分组&quot;)
+REFERENCES public.&quot;Group&quot; (&quot;主机分组&quot;) MATCH FULL
+ON UPDATE NO ACTION
+ON DELETE NO ACTION
+DEFERRABLE INITIALLY DEFERRED
+NOT VALID,
+CONSTRAINT &quot;GFkey&quot; FOREIGN KEY (&quot;日志等级&quot;)
+REFERENCES public.&quot;Grade&quot; (&quot;日志等级&quot;) MATCH FULL
+ON UPDATE NO ACTION
+ON DELETE NO ACTION
+DEFERRABLE INITIALLY DEFERRED
+NOT VALID
+)
+WITH (
+OIDS = FALSE
+)
+TABLESPACE pg_default;
+
+ALTER TABLE public.&quot;Mess&quot;
+OWNER to postgres;
+</code></pre><p><img src="/assets/blogImg/微信图片_20180803134358.png" alt=""></p>
+<h1 id="写入数据"><a href="#写入数据" class="headerlink" title="写入数据"></a>写入数据</h1><p>首先先确定日志类型、日志等级和主机分组的信息</p>
+<h2 id="类型表"><a href="#类型表" class="headerlink" title="类型表"></a>类型表</h2><pre><code>INSERT INTO public.&quot;Class&quot;(
+    &quot;日志类型&quot;, &quot;类型名称&quot;)
+    VALUES (&apos;C01&apos;, &apos;A&apos;),(&apos;C02&apos;,&apos;B&apos;),(&apos;C03&apos;,&apos;C&apos;),(&apos;C04&apos;,&apos;D&apos;);
+</code></pre><p><img src="/assets/blogImg/微信图片_20180803134510.png" alt=""> </p>
+<h2 id="等级表"><a href="#等级表" class="headerlink" title="等级表"></a>等级表</h2><pre><code>INSERT INTO public.&quot;Grade&quot;(
+    &quot;日志等级&quot;, &quot;等级名称&quot;)
+    VALUES (&apos;G01&apos;, &apos;A级&apos;),(&apos;G02&apos;,&apos;B级&apos;),(&apos;G03&apos;,&apos;C级&apos;),(&apos;G04&apos;,&apos;D级&apos;);
+</code></pre><p><img src="/assets/blogImg/微信图片_20180803134621.png" alt=""> </p>
+<h2 id="主机分组表"><a href="#主机分组表" class="headerlink" title="主机分组表"></a>主机分组表</h2><pre><code>INSERT INTO public.&quot;Group&quot;(
+    &quot;主机分组&quot;, &quot;分组名称&quot;)
+    VALUES (&apos;F01&apos;, &apos;A组&apos;),(&apos;F02&apos;,&apos;B组&apos;),(&apos;F03&apos;,&apos;C组&apos;),(&apos;F04&apos;,&apos;D组&apos;);
+</code></pre><p><img src="/assets/blogImg/微信图片_20180803134651.png" alt=""> </p>
+<h2 id="日志表"><a href="#日志表" class="headerlink" title="日志表"></a>日志表</h2><pre><code>INSERT INTO public.&quot;Mess&quot;(
+    &quot;主机id&quot;, &quot;日志类型&quot;, &quot;日志等级&quot;, &quot;日志时间&quot;, &quot;日志消息&quot;, &quot;主机分组&quot;)
+    VALUES(&apos;00000001&apos;,&apos;C01&apos;,&apos;G01&apos;,&apos;2018-03-14&apos;,&apos;asjdgahsfhdsvbjhdsvbcxnvvbjdfvbdsfjvbdsfbds&apos;, &apos;F01&apos;),
+    (&apos;00000002&apos;,&apos;C02&apos;,&apos;G03&apos;,&apos;2018-03-14&apos;,&apos;asjdgahsfhdsvbjhdsvbcx215641462273412424&apos;,&apos;F04&apos;),
+    (&apos;00000003&apos;,&apos;C04&apos;,&apos;G02&apos;,&apos;2018-03-21&apos;,&apos;12jdgahsfhdsvbjhdsvbcx215641462273412424&apos;,&apos;F03&apos;),
+    (&apos;00000004&apos;,&apos;C03&apos;,&apos;G02&apos;,&apos;2018-03-26&apos;,&apos;12jdgahsfhd123456dsvbcx215641462273412424&apos;,&apos;F04&apos;),
+    (&apos;00000005&apos;,&apos;C01&apos;,&apos;G04&apos;,&apos;2018-03-26&apos;,&apos;12jdgahsfhd123456dsvbcx215641462273412424&apos;,&apos;F02&apos;);
+</code></pre><p><img src="/assets/blogImg/微信图片_20180803134726.png" alt=""> </p>
+<h1 id="视图操作"><a href="#视图操作" class="headerlink" title="视图操作"></a>视图操作</h1><h2 id="创建视图"><a href="#创建视图" class="headerlink" title="创建视图"></a>创建视图</h2><p>info_log视图的创建语句</p>
+<pre><code>CREATE OR REPLACE VIEW public.info_log AS
+SELECT &quot;Mess&quot;.&quot;主机id&quot;,
+&quot;Group&quot;.&quot;分组名称&quot;,
+&quot;Class&quot;.&quot;类型名称&quot;,
+&quot;Grade&quot;.&quot;等级名称&quot;,
+&quot;Mess&quot;.&quot;日志时间&quot;,
+&quot;Mess&quot;.&quot;日志消息&quot;
+     FROM &quot;Mess&quot;,
+&quot;Group&quot;,
+&quot;Grade&quot;,
+&quot;Class&quot;
+     WHERE &quot;Mess&quot;.&quot;主机分组&quot;::text = &quot;Group&quot;.&quot;主机分组&quot;::text AND &quot;Mess&quot;.&quot;日志类型&quot;::text = &quot;Class&quot;.&quot;日志类型&quot;::text AND &quot;Mess&quot;.&quot;日志等级&quot;::text = &quot;Grade&quot;.&quot;日志等级&quot;::text;
+
+ALTER TABLE public.info_log
+OWNER TO postgres;
+</code></pre><p><img src="/assets/blogImg/微信图片_20180803134844.png" alt=""> </p>
+<h2 id="视图查询"><a href="#视图查询" class="headerlink" title="视图查询"></a>视图查询</h2><p>通过视图进行所有日志信息的查询</p>
+<pre><code>SELECT &quot;主机id&quot;, &quot;分组名称&quot;, &quot;类型名称&quot;, &quot;等级名称&quot;, &quot;日志时间&quot;, &quot;日志消息&quot;
+    FROM public.info_log;
+</code></pre><p><img src="/assets/blogImg/微信图片_20180803135039.png" alt=""></p>
+<h1 id="总结分析"><a href="#总结分析" class="headerlink" title="总结分析"></a>总结分析</h1><ul>
+<li>通过数据库表的设计和创建，加深了对数据库的理解，掌握了数据库基本操作技能</li>
+<li>主键和外键的设置可以帮助我们理清各个表之间的关系，最后通过视图操作将其在一张表上显示，清晰明了</li>
+<li>通过对视图的操作即可实现对各个表数据的操作，提升了操作效率</li>
+<li>视图操作使得数据库其它表的修改变得方便、安全，通过视图，用户只能查询和修改他们所能见到的数据。</li>
+</ul>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ul>
+<li><a href="https://www.postgresql.org/docs/10/static/index.html" target="_blank" rel="noopener">PostgreSQL文档</a></li>
+<li><a href="https://www.jb51.net/books/479286.html" target="_blank" rel="noopener">PostgreSQL 9从零开始学</a></li>
+</ul>
+</div><div class="tags"></div><div class="post-share"></div><div class="post-nav"><a href="/2018/08/03/简单的linux设备驱动程序/" class="pre"></a><a href="/2018/07/31/proc目录下信息提取/" class="next"></a></div><div id="comments"></div></div></div></div><div class="layout-r"><div id="sidebar"><div class="search-pla"></div><div id="toc" class="widget"><div class="widget-title"><i class="fa fa-fei">Contents</i></div><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#日志分析及数据库表的设计"><span class="toc-text">日志分析及数据库表的设计</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2018年7月30日-2018年8月6日"><span class="toc-text">2018年7月30日~2018年8月6日</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#标签：-PostgreSQL"><span class="toc-text">标签： PostgreSQL  </span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#项目要求"><span class="toc-text">项目要求</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#日志分析"><span class="toc-text">日志分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#数据库设计"><span class="toc-text">数据库设计</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#数据操作"><span class="toc-text">数据操作</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#知识储备"><span class="toc-text">知识储备</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#数据库简介"><span class="toc-text">数据库简介</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#PostgreSQL基础"><span class="toc-text">PostgreSQL基础</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#数据库视图"><span class="toc-text">数据库视图</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#视图的概述"><span class="toc-text">视图的概述</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#视图的作用"><span class="toc-text">视图的作用</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#数据库表设计"><span class="toc-text">数据库表设计</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#数据库表的设计"><span class="toc-text">数据库表的设计</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#字段类型设计"><span class="toc-text">字段类型设计</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#测试环境"><span class="toc-text">测试环境</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#硬件"><span class="toc-text">硬件</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#软件"><span class="toc-text">软件</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#创建数据库表"><span class="toc-text">创建数据库表</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#类型表的创建语句"><span class="toc-text">类型表的创建语句</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#等级表的创建语句"><span class="toc-text">等级表的创建语句</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#主机分组表的创建语句"><span class="toc-text">主机分组表的创建语句</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#日志表创建语句"><span class="toc-text">日志表创建语句</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#写入数据"><span class="toc-text">写入数据</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#类型表"><span class="toc-text">类型表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#等级表"><span class="toc-text">等级表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#主机分组表"><span class="toc-text">主机分组表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#日志表"><span class="toc-text">日志表</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#视图操作"><span class="toc-text">视图操作</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#创建视图"><span class="toc-text">创建视图</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#视图查询"><span class="toc-text">视图查询</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#总结分析"><span class="toc-text">总结分析</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#参考资料"><span class="toc-text">参考资料</span></a></li></ol></div><div class="widget"><div class="widget-title"><i class="fa fa-xie"> Recent</i></div><ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2018/08/08/FAQ/">FAQ</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/03/简单的linux设备驱动程序/">简单的linux设备驱动程序</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/03/日志分析及数据库表的设计/">日志分析及数据库表的设计</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/31/proc目录下信息提取/">proc目录下信息提取</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/31/Electron应用开发/">Electron应用开发</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/31/BlurAdmin模板学习/">BlurAdmin模板学习</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/31/Electron开发流程/">Electron开发流程</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/30/PostgreSQL操作接口/">PostgreSQL操作接口</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/29/PostgreSQL语法学习/">PostgreSQL语法学习</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/29/PostgreSQL环境搭建/">PostgreSQL环境搭建</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-biao"> Tags</i></div><div class="tagcloud"><a href="/tags/安全/" style="font-size: 15px;">安全</a> <a href="/tags/旧事/" style="font-size: 15px;">旧事</a> <a href="/tags/博客/" style="font-size: 15px;">博客</a> <a href="/tags/Kernel/" style="font-size: 15px;">Kernel</a> <a href="/tags/操作系统/" style="font-size: 15px;">操作系统</a> <a href="/tags/红线/" style="font-size: 15px;">红线</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-archive"> Archive</i></div><ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/08/">August 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/07/">July 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/04/">April 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/03/">March 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/06/">June 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/05/">May 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/04/">April 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/03/">March 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04/">April 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/03/">March 2014</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-you"> Blogroll</i></div><ul></ul><a href="http://www.example1.com/" title="site-name1" target="_blank">site-name1</a><ul></ul><a href="http://www.example2.com/" title="site-name2" target="_blank">site-name2</a><ul></ul><a href="http://www.example3.com/" title="site-name3" target="_blank">site-name3</a></div></div></div></div><a id="totop" href="#top"></a><div id="footer"><div class="footer-info"><p><a href="/baidusitemap.xml">Baidu Site Haritası</a> |  <a href="/atom.xml">RSS</a> |  <a href="/about/">About</a></p><p>本站总访问量：<i id="busuanzi_container_site_pv"><i id="busuanzi_value_site_pv"></i></i>次</p><p><span> Copyright &copy;<a href="/." rel="nofollow">xiafei-xupt.</a></span><span> Theme by<a rel="nofollow" target="_blank" href="https://github.com/chaooo/hexo-theme-BlueLake"> BlueLake.</a></span><span> Count by<a href="http://busuanzi.ibruce.info/"> busuanzi.</a></span><span> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a></span></p></div></div></div><script src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js" async></script><script type="text/javascript" src="/js/search.json.js?v=2.0.1"></script><script type="text/javascript" src="/js/toctotop.js?v=2.0.1" async></script></body></html>
