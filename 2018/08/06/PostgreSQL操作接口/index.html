@@ -1,0 +1,247 @@
+<!DOCTYPE html><html lang="en"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description"><title>PostgreSQL操作接口 | xiafei-xupt's blog</title><link rel="stylesheet" type="text/css" href="//fonts.css.network/css?family=Source+Code+Pro"><link rel="stylesheet" type="text/css" href="/css/style.css?v=2.0.1"><link rel="stylesheet" type="text/css" href="/css/highlight.css?v=2.0.1"><link rel="Shortcut Icon" href="/favicon.ico"><link rel="bookmark" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><link rel="alternate" type="application/atom+xml" href="/atom.xml"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">PostgreSQL操作接口</h1><a id="logo" href="/.">xiafei-xupt's blog</a><p class="description">汝之意志所向,即吾剑之所指</p></div><div id="nav-menu"><a href="/." class="current"><i class="fa fa-home"> Home</i></a><a href="/about/"><i class="fa fa-user"> About</i></a><a href="/atom.xml"><i class="fa fa-rss"> RSS</i></a></div><div id="search-form"><div id="result-mask" class="hide"></div><label><input id="search-key" type="text" autocomplete="off" placeholder="Arama"></label><div id="result-wrap" class="hide"><div id="search-result"></div></div><div class="hide"><template id="search-tpl"><div class="item"><a href="/{path}" title="{title}"><div class="title">{title}</div><div class="time">{date}</div><div class="tags">{tags}</div></a></div></template></div></div></div><div id="layout" class="layout-g"><div class="layout-l"><div class="content_container"><div class="post"><h1 class="post-title">PostgreSQL操作接口</h1><div class="post-meta"><a href="/2018/08/06/PostgreSQL操作接口/#comments" class="comment-count"></a><p><span class="date">Aug 06, 2018</span><span><i id="busuanzi_container_page_pv"><i id="busuanzi_value_page_pv"></i><i>Hits</i></i></span></p></div><div class="post-content"><blockquote>
+<ul>
+<li>0x00-文章前言   </li>
+<li>0x01-知识储备</li>
+<li>0x02-测试环境</li>
+<li>0x03-方案设计</li>
+<li>0x04-实践验证</li>
+<li>0x05-总结分析</li>
+<li>0x06-程序源码</li>
+<li>0x07-参考资料</li>
+</ul>
+</blockquote>
+<h1 id="0x00-文章前言"><a href="#0x00-文章前言" class="headerlink" title="0x00-文章前言"></a>0x00-文章前言</h1><h2 id="文章目的"><a href="#文章目的" class="headerlink" title="文章目的"></a>文章目的</h2><ul>
+<li>日志分析中展示要求、界面框架数据库查询接口</li>
+<li>PostgreSQL和Node.js、Electron应用之间的连接、通信、封装、优化、打包</li>
+</ul>
+<h2 id="文章前景"><a href="#文章前景" class="headerlink" title="文章前景"></a>文章前景</h2><ul>
+<li>对于Node.js调用PostgreSQL接口的封装有利于面向对象的开发</li>
+<li>通过Electron使用Node.js模块和数据库通信，可以加深对Electron框架的理解</li>
+<li>对于Node.js和数据库通信的掌握可以打通前后端的界限，有利于形成全栈思维</li>
+</ul>
+<h1 id="0x01-知识储备"><a href="#0x01-知识储备" class="headerlink" title="0x01-知识储备"></a>0x01-知识储备</h1><h2 id="PostgreSQL基础"><a href="#PostgreSQL基础" class="headerlink" title="PostgreSQL基础"></a>PostgreSQL基础</h2><ul>
+<li>自从MySQL被Oracle收购以后，PostgreSQL逐渐成为开源关系型数据库的首选。</li>
+<li>PostgreSQL是一个功能强大的开源对象关系数据库系统，它使用并扩展了SQL语言，并结合了许多安全存储和扩展最复杂数据工作负载的功能。</li>
+<li>PostgreSQL的起源可以追溯到1986年，作为加州大学伯克利分校POSTGRES项目的一部分，并在核心平台上进行了30多年的积极开发。</li>
+<li>PostgreSQL凭借其经过验证的架构，可靠性，数据完整性，强大的功能集，可扩展性以及软件背后的开源社区的奉献精神赢得了良好的声誉，以始终如一地提供高性能和创新的解决方案。</li>
+<li>PostgreSQL在所有主要操作系统上运行，自2001年以来一直是符合ACID标准的，并且具有强大的附加功能，例如流行的PostGIS地理空间数据库扩展器。毫无疑问，PostgreSQL已经成为许多人和组织的首选开源关系数据库。</li>
+</ul>
+<h2 id="Node-js基础"><a href="#Node-js基础" class="headerlink" title="Node.js基础"></a>Node.js基础</h2><ul>
+<li>Node.js 是一个基于 Chrome V8 引擎的 JavaScript 运行环境。 </li>
+<li>Node.js 使用了一个事件驱动、非阻塞式 I/O 的模型，使其轻量又高效。 </li>
+<li>Node.js 的包管理器 npm，是全球最大的开源库生态系统。</li>
+<li>Node.JS逐渐发展成一个成熟的开发平台，吸引了许多开发者。有许多大型高流量网站都采用Node.JS进行开发，此外，开发人员还可以使用它来开发一些快速移动Web框架。</li>
+<li>除了Web应用外，Node.JS也被应用在许多方面，包括应用程序监控、媒体流、远程控制、桌面和移动应用等等</li>
+</ul>
+<h1 id="0x02-测试环境"><a href="#0x02-测试环境" class="headerlink" title="0x02-测试环境"></a>0x02-测试环境</h1><h2 id="硬件"><a href="#硬件" class="headerlink" title="硬件"></a>硬件</h2><ul>
+<li>处理器：i7</li>
+<li>内存：8G</li>
+<li>显示器：VGA 或更高</li>
+<li>硬盘空间：128G</li>
+</ul>
+<h2 id="软件"><a href="#软件" class="headerlink" title="软件"></a>软件</h2><ul>
+<li>Windows 10系统</li>
+<li>Debian 9系统</li>
+<li>PostgreSQL</li>
+<li>Node.js</li>
+</ul>
+<p><strong>注：</strong>由于PostgreSQL操作接口使用Node.js实现，而Windows 10系统和Debian 9系统对于Node.js的支持完全一样，故此处只在Windows 10系统上进行测试</p>
+<h1 id="0x03-方案设计"><a href="#0x03-方案设计" class="headerlink" title="0x03-方案设计"></a>0x03-方案设计</h1><p>Electron通过Node.js使用 pg 模块和PostgreSQL连接</p>
+<h2 id="客户端方式"><a href="#客户端方式" class="headerlink" title="客户端方式"></a>客户端方式</h2><p>每一次数据访问请求都必须经历建立数据库连接、打开数据库、存取数据和关闭数据库连接等步骤，而连接并打开数据库是一件既消耗资源又费时的工作，如果频繁发生这种数据库操作，系统的性能必然会急剧下降，甚至会导致系统崩溃。<br>适用：客户端连接次数少、重复访问率低的数据</p>
+<p><strong>注：</strong>本文数据库操作接口使用客户端方式实现</p>
+<h2 id="连接池方式"><a href="#连接池方式" class="headerlink" title="连接池方式"></a>连接池方式</h2><p>连接池允许应用程序从连接池中获得一个连接并使用这个连接，而不需要为每一个连接请求重新建立一个连接。一旦一个新的连接被创建并且放置在连接池中，应用程序就可以重复使用这个连接而不必实施整个数据库连接创建过程。<br>当应用程序请求一个连接时，连接池为该应用程序分配一个连接而不是重新建立一个连接；当应用程序使用完连接后，该连接被归还给连接池而不是直接释放。<br>适用：大量、重复访问率高的数据</p>
+<h1 id="0x04-实践验证"><a href="#0x04-实践验证" class="headerlink" title="0x04-实践验证"></a>0x04-实践验证</h1><h2 id="创建数据库"><a href="#创建数据库" class="headerlink" title="创建数据库"></a>创建数据库</h2><p><img src="/assets/blogImg/windows10-PostgreSQL-interface-pg-1.png" alt=" PostgreSQL操作接口"></p>
+<h2 id="插入数据"><a href="#插入数据" class="headerlink" title="插入数据"></a>插入数据</h2><p><img src="/assets/blogImg/windows10-PostgreSQL-interface-pg-2.png" alt=" PostgreSQL操作接口"></p>
+<h2 id="安装pg模块"><a href="#安装pg模块" class="headerlink" title="安装pg模块"></a>安装pg模块</h2><p>Node.js中有专门的模块可以用来连接PostgreSql数据库，首先从npm资源库中获取数据库模块，名为”pg”：</p>
+<pre><code>npm install pg
+npm ls --depth 0//查看已安装模块
+</code></pre><p><img src="/assets/blogImg/windows10-PostgreSQL-interface-pg1.png" alt=" PostgreSQL操作接口"></p>
+<h2 id="接口测试"><a href="#接口测试" class="headerlink" title="接口测试"></a>接口测试</h2><h3 id="增删改查接口测试"><a href="#增删改查接口测试" class="headerlink" title="增删改查接口测试"></a>增删改查接口测试</h3><p><img src="/assets/blogImg/windows10-PostgreSQL-interface-pg2.png" alt=" PostgreSQL操作接口"><br><img src="/assets/blogImg/windows10-PostgreSQL-interface-pg30.png" alt=" PostgreSQL操作接口"></p>
+<h3 id="SELECT接口测试"><a href="#SELECT接口测试" class="headerlink" title="SELECT接口测试"></a>SELECT接口测试</h3><p>对<strong>增删改查</strong>接口中<strong>查询</strong>接口进行了改进</p>
+<h4 id="Node-js测试"><a href="#Node-js测试" class="headerlink" title="Node.js测试"></a>Node.js测试</h4><p><img src="/assets/blogImg/windows10-PostgreSQL-interface-pg3.png" alt=" PostgreSQL操作接口"></p>
+<h4 id="Electron测试"><a href="#Electron测试" class="headerlink" title="Electron测试"></a>Electron测试</h4><p><img src="/assets/blogImg/微信图片_20180810091352.png" alt=" PostgreSQL操作接口"><br><img src="/assets/blogImg/微信图片_20180810090914.png" alt=" PostgreSQL操作接口"></p>
+<h1 id="0x05-总结分析"><a href="#0x05-总结分析" class="headerlink" title="0x05-总结分析"></a>0x05-总结分析</h1><ul>
+<li>在函数实现里面，我们采用了回调函数的形式实现，根据输出信息可以很号的看出node.js的主要特性：非阻塞</li>
+<li>数据库的查询接口改进后使用指定行列进行操作，查询比较具体，由于Node.js使用非阻塞式 I/O 的模型，故多个查询之间不会冲突</li>
+<li>PostgreSQL操作接口是连接了前后端之间的桥梁，使得前端页面和后端数据库之间的通信变得简单直观。</li>
+</ul>
+<h1 id="0x06-程序源码"><a href="#0x06-程序源码" class="headerlink" title="0x06-程序源码"></a>0x06-程序源码</h1><h2 id="创建数据库脚本"><a href="#创建数据库脚本" class="headerlink" title="创建数据库脚本"></a>创建数据库脚本</h2><pre><code>create table Log_Inf(id character varying(10),type character varying(10),rank character varying(10));
+</code></pre><h2 id="插入数据脚本"><a href="#插入数据脚本" class="headerlink" title="插入数据脚本"></a>插入数据脚本</h2><pre><code>insert into Log_Inf values(&apos;1&apos;,&apos;C01&apos;,&apos;G01&apos;);
+insert into Log_Inf values(&apos;2&apos;,&apos;C02&apos;,&apos;G02&apos;);
+insert into Log_Inf values(&apos;3&apos;,&apos;C03&apos;,&apos;G03&apos;);
+insert into Log_Inf values(&apos;4&apos;,&apos;C04&apos;,&apos;G04&apos;);
+</code></pre><h2 id="增删改查操作的封装"><a href="#增删改查操作的封装" class="headerlink" title="增删改查操作的封装"></a>增删改查操作的封装</h2><h3 id="Client-js"><a href="#Client-js" class="headerlink" title="Client.js"></a>Client.js</h3><pre><code>var f = require(&apos;./PG&apos;);
+var pg = require(&apos;pg&apos;);
+
+//var conString = &quot;tcp://postgres:postgres@localhost/test&quot;;
+var conString = &quot;tcp://postgres:111111@localhost:5432/test&quot;;
+
+var client = new pg.Client(conString);
+var value = [&apos;9&apos;,&apos;C09&apos;,&apos;G09&apos;];
+insertSQLString = &apos;insert into Log_Inf values($1,$2,$3)&apos;;
+selectSQLString = &apos;select * from Log_Inf&apos;;
+updateSQLString = &quot;update Log_Inf set TYPE=&apos;C07&apos; where ID=&apos;4&apos;&quot;;
+deleteSQLString = &quot;delete from Log_Inf where ID=&apos;9&apos;&quot;;
+
+client.connect(function(error, results) {
+if(error){
+console.log(&apos;ClientConnectionReady Error: &apos; + error.message);
+client.end();
+return;
+}
+console.log(&apos;connection success...\n&apos;);
+
+f._select(client,selectSQLString);
+f._insert(client,insertSQLString,value);
+f._update(client,updateSQLString);
+f._delete(client,deleteSQLString);
+});
+</code></pre><h3 id="PG-js"><a href="#PG-js" class="headerlink" title="PG.js"></a>PG.js</h3><pre><code>function _insert(client,insertSQLString,value)
+{
+console.log(&quot;insert beginning&quot;);
+client.query(insertSQLString, value,  function(error, results)
+{
+if(error)
+{
+console.log(&quot;ClientReady Error: &quot; + error.message),
+client.end();
+return;
+}
+console.log(&apos;Inserted: &apos; + results.affectedRows + &apos; row.&apos;),
+console.log(&apos;insert success...\n&apos;);
+});
+console.log(&quot;insert end\n&quot;);
+}
+
+function _select(client,selectSQLString)
+{
+console.log(&quot;select beginning&quot;);
+client.query(selectSQLString,  function selectCb(error, results, fields)
+{
+console.log(&quot;in select callback function&quot;);
+if (error)
+{
+console.log(&apos;GetData Error: &apos; + error.message),
+client.end();
+return;
+}
+if(results.rowCount &gt; 0)
+{
+var firstResult,
+resultSet = &apos;&apos;;
+for(var i = 0, len = results.rowCount; i &lt; len; i++)
+{
+firstResult = results.rows[i]; 
+resultSet += &apos;id:&apos; + firstResult[&apos;id&apos;] + &apos; &apos; + &apos;type:&apos; + firstResult[&apos;type&apos;] + &apos; &apos; + 
+ &apos;rank:&apos; + firstResult[&apos;rank&apos;] + &apos;\n&apos;; 
+}
+}
+console.log(resultSet);
+/* 添加功能：使查询结果集返回到客户端并保证此函数的通用性. */
+});
+console.log(&quot;select end\n&quot;);
+}
+
+function _update(client,updateSQLString)
+{
+console.log(&quot;update beginning&quot;);
+client.query(updateSQLString,function(error, results)
+{
+if(error)
+{
+console.log(&quot;ClientReady Error: &quot; + error.message),
+client.end();
+return;
+}
+console.log(&apos;update success...\n&apos;);
+});
+console.log(&quot;update end\n&quot;);
+}
+
+function _delete(client,deleteSQLString)
+{
+console.log(&quot;delete beginning&quot;);
+client.query(deleteSQLString,  function(error, results)
+{
+if(error)
+{
+console.log(&quot;ClientReady Error: &quot; + error.message),
+client.end();
+return;
+}
+console.log(&apos;delete success...\n&apos;);
+});
+console.log(&quot;delete end\n&quot;);
+}
+
+
+exports._insert = _insert;
+exports._select = _select;
+exports._update = _update;
+exports._delete = _delete;
+</code></pre><h2 id="SELECT接口的封装"><a href="#SELECT接口的封装" class="headerlink" title="SELECT接口的封装"></a>SELECT接口的封装</h2><h3 id="Node-js测试-1"><a href="#Node-js测试-1" class="headerlink" title="Node.js测试"></a>Node.js测试</h3><h4 id="Client-js-1"><a href="#Client-js-1" class="headerlink" title="Client.js"></a>Client.js</h4><pre><code>var f = require(&apos;./SELECT&apos;);
+var pg = require(&apos;pg&apos;);
+
+var conString = &quot;tcp://postgres:111111@localhost:5432/test&quot;;//1.连接
+
+var client = new pg.Client(conString);
+Table_Name=&apos;Log_Inf&apos;;//2.表名
+Row_Number=0;//2.行数，默认从0开始
+Col_Name=&apos;id&apos;;//2.列名
+client.connect(function(error, results) {
+if(error){
+console.log(&apos;ClientConnectionReady Error: &apos; + error.message);
+client.end();
+return;
+}
+//f._select(client,Table_Name,Row_Number,Col_Name);
+f._select(client,&apos;Log_Inf&apos;,3,&apos;rank&apos;);//2.all
+});
+</code></pre><h4 id="SELECT-js"><a href="#SELECT-js" class="headerlink" title="SELECT.js"></a>SELECT.js</h4><pre><code>function _select(client,Table_Name,Row_Number,Col_Name)
+{
+selectSQLString = &apos;select * from &apos;+Table_Name;    
+client.query(selectSQLString,  function selectCb(error, results, fields)
+{
+if (error)
+{
+console.log(&apos;GetData Error: &apos; + error.message),
+client.end();
+return;
+}
+if(results.rowCount &gt; 0)
+{
+resultSet = results.rows[Row_Number][Col_Name]; 
+}
+console.log(resultSet);
+/* 添加功能：使查询结果集返回到客户端并保证此函数的通用性. */
+});
+}
+
+exports._select = _select;
+</code></pre><p>打包后的Node.js测试<a href="https://pan.baidu.com/s/1rgjMGhRljFYwuCxMiPaACQ" target="_blank" rel="noopener">SELECT接口</a> 密码：<code>mg3w</code>     </p>
+<h3 id="Electron测试-1"><a href="#Electron测试-1" class="headerlink" title="Electron测试"></a>Electron测试</h3><p>测试代码是在我写的<strong>Electron开发流程</strong>中的<a href="https://pan.baidu.com/s/15miRWxA6Qj8cv9cCB2ydhw" target="_blank" rel="noopener">electron-v1.0.0</a>（密码：<code>dkes</code>）基础上进行修改 </p>
+<p>修改方式：</p>
+<ol>
+<li><p>electron-v1.0.0文件夹重命名为Electron_PostgreSQL，并将Node.js测试中SELECT.js和Client.js文件放到Electron_PostgreSQL的文件夹下</p>
+</li>
+<li><p>在index.html的body标签中加入：</p>
+</li>
+</ol>
+<pre><code>&lt;div&gt;
+数据库数据：
+&lt;span id=&quot;pg_data&quot;&gt;&lt;/span&gt;
+&lt;script src=&quot;./Client.js&quot;&gt;&lt;/script&gt;
+&lt;/div&gt; 
+</code></pre><ol start="3">
+<li>在SELECT.js中<code>console.log(&#39;resultSet&#39;);</code>的下一行加入 ：</li>
+</ol>
+<pre><code>document.getElementById(&apos;pg_data&apos;).innerHTML = resultSet;
+</code></pre><p>打包后的Electron测试:<a href="https://pan.baidu.com/s/1oKRTyN3KHM39YbnwXBz07w" target="_blank" rel="noopener">Electron_PostgreSQL</a>(密码：<code>8hcf</code>)</p>
+<h1 id="0x07-参考资料"><a href="#0x07-参考资料" class="headerlink" title="0x07-参考资料"></a>0x07-参考资料</h1><ul>
+<li><a href="https://www.postgresql.org" target="_blank" rel="noopener">PostgreSQL 官网</a></li>
+<li><a href="http://nodejs.cn/" target="_blank" rel="noopener">Node.js 中文网</a></li>
+<li><a href="http://nodejs.cn/api/" target="_blank" rel="noopener">Node.js v10.7.0 文档</a></li>
+<li><a href="http://nodejs.cn/" target="_blank" rel="noopener">Node.js 中文网</a></li>
+<li><a href="https://electronjs.org/" target="_blank" rel="noopener">Electron 官网</a></li>
+</ul>
+</div><div class="tags"><a href="/tags/Electron/">Electron</a><a href="/tags/PostgreSQL/">PostgreSQL</a><a href="/tags/实习/">实习</a><a href="/tags/JavaScript/">JavaScript</a></div><div class="post-share"></div><div class="post-nav"><a href="/2018/08/13/BlurAdmin模板学习/" class="pre">BlurAdmin模板学习</a><a href="/2018/07/30/日志分析及数据库表的设计/" class="next">日志分析及数据库表的设计</a></div><div id="comments"></div></div></div></div><div class="layout-r"><div id="sidebar"><div class="search-pla"></div><div id="toc" class="widget"><div class="widget-title"><i class="fa fa-fei">Contents</i></div><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#0x00-文章前言"><span class="toc-text">0x00-文章前言</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#文章目的"><span class="toc-text">文章目的</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#文章前景"><span class="toc-text">文章前景</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x01-知识储备"><span class="toc-text">0x01-知识储备</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#PostgreSQL基础"><span class="toc-text">PostgreSQL基础</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Node-js基础"><span class="toc-text">Node.js基础</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x02-测试环境"><span class="toc-text">0x02-测试环境</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#硬件"><span class="toc-text">硬件</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#软件"><span class="toc-text">软件</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x03-方案设计"><span class="toc-text">0x03-方案设计</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#客户端方式"><span class="toc-text">客户端方式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#连接池方式"><span class="toc-text">连接池方式</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x04-实践验证"><span class="toc-text">0x04-实践验证</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#创建数据库"><span class="toc-text">创建数据库</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#插入数据"><span class="toc-text">插入数据</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#安装pg模块"><span class="toc-text">安装pg模块</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#接口测试"><span class="toc-text">接口测试</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#增删改查接口测试"><span class="toc-text">增删改查接口测试</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#SELECT接口测试"><span class="toc-text">SELECT接口测试</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Node-js测试"><span class="toc-text">Node.js测试</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Electron测试"><span class="toc-text">Electron测试</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x05-总结分析"><span class="toc-text">0x05-总结分析</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x06-程序源码"><span class="toc-text">0x06-程序源码</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#创建数据库脚本"><span class="toc-text">创建数据库脚本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#插入数据脚本"><span class="toc-text">插入数据脚本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#增删改查操作的封装"><span class="toc-text">增删改查操作的封装</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Client-js"><span class="toc-text">Client.js</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#PG-js"><span class="toc-text">PG.js</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#SELECT接口的封装"><span class="toc-text">SELECT接口的封装</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Node-js测试-1"><span class="toc-text">Node.js测试</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Client-js-1"><span class="toc-text">Client.js</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#SELECT-js"><span class="toc-text">SELECT.js</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Electron测试-1"><span class="toc-text">Electron测试</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x07-参考资料"><span class="toc-text">0x07-参考资料</span></a></li></ol></div><div class="widget"><div class="widget-title"><i class="fa fa-xie"> Recent</i></div><ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2026/01/04/博客模板/">博客模板</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/20/Electron应用开发/">Electron应用开发</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/13/BlurAdmin模板学习/">BlurAdmin模板学习</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/06/PostgreSQL操作接口/">PostgreSQL操作接口</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/30/日志分析及数据库表的设计/">日志分析及数据库表的设计</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/23/Electron开发流程/">Electron 开发流程</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/16/PostgreSQL语法学习/">PostgreSQL语法学习</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/09/PostgreSQL环境搭建/">PostgreSQL环境搭建</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/02/数据库方向/">数据库方向</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/06/25/proc目录下信息提取/">Linux /proc目录下信息提取</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-biao"> Tags</i></div><div class="tagcloud"><a href="/tags/安全/" style="font-size: 15px;">安全</a> <a href="/tags/Electron/" style="font-size: 15px;">Electron</a> <a href="/tags/FAQ/" style="font-size: 15px;">FAQ</a> <a href="/tags/Kernel/" style="font-size: 15px;">Kernel</a> <a href="/tags/实习/" style="font-size: 15px;">实习</a> <a href="/tags/JavaScript/" style="font-size: 15px;">JavaScript</a> <a href="/tags/PostgreSQL/" style="font-size: 15px;">PostgreSQL</a> <a href="/tags/旧事/" style="font-size: 15px;">旧事</a> <a href="/tags/红线/" style="font-size: 15px;">红线</a> <a href="/tags/博客/" style="font-size: 15px;">博客</a> <a href="/tags/Linux/" style="font-size: 15px;">Linux</a> <a href="/tags/模板/" style="font-size: 15px;">模板</a> <a href="/tags/操作系统/" style="font-size: 15px;">操作系统</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-archive"> Archive</i></div><ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/01/">January 2026</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/08/">August 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/07/">July 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/04/">April 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/03/">March 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/06/">June 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/05/">May 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/04/">April 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/03/">March 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04/">April 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/03/">March 2014</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-you"> Blogroll</i></div><ul></ul><a href="http://www.example1.com/" title="site-name1" target="_blank">site-name1</a><ul></ul><a href="http://www.example2.com/" title="site-name2" target="_blank">site-name2</a><ul></ul><a href="http://www.example3.com/" title="site-name3" target="_blank">site-name3</a></div></div></div></div><a id="totop" href="#top"></a><div id="footer"><div class="footer-info"><p><a href="/baidusitemap.xml">Baidu Site Haritası</a> |  <a href="/atom.xml">RSS</a> |  <a href="/about/">About</a></p><p>本站总访问量：<i id="busuanzi_container_site_pv"><i id="busuanzi_value_site_pv"></i></i>次</p><p><span> Copyright &copy;<a href="/." rel="nofollow">xiafei-xupt.</a></span><span> Theme by<a rel="nofollow" target="_blank" href="https://github.com/chaooo/hexo-theme-BlueLake"> BlueLake.</a></span><span> Count by<a href="http://busuanzi.ibruce.info/"> busuanzi.</a></span><span> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a></span></p></div></div></div><script src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js" async></script><script type="text/javascript" src="/js/search.json.js?v=2.0.1"></script><script type="text/javascript" src="/js/toctotop.js?v=2.0.1" async></script></body></html>

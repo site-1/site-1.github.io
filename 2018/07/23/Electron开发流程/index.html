@@ -1,0 +1,275 @@
+<!DOCTYPE html><html lang="en"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description"><title>Electron 开发流程 | xiafei-xupt's blog</title><link rel="stylesheet" type="text/css" href="//fonts.css.network/css?family=Source+Code+Pro"><link rel="stylesheet" type="text/css" href="/css/style.css?v=2.0.1"><link rel="stylesheet" type="text/css" href="/css/highlight.css?v=2.0.1"><link rel="Shortcut Icon" href="/favicon.ico"><link rel="bookmark" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><link rel="alternate" type="application/atom+xml" href="/atom.xml"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">Electron 开发流程</h1><a id="logo" href="/.">xiafei-xupt's blog</a><p class="description">汝之意志所向,即吾剑之所指</p></div><div id="nav-menu"><a href="/." class="current"><i class="fa fa-home"> Home</i></a><a href="/about/"><i class="fa fa-user"> About</i></a><a href="/atom.xml"><i class="fa fa-rss"> RSS</i></a></div><div id="search-form"><div id="result-mask" class="hide"></div><label><input id="search-key" type="text" autocomplete="off" placeholder="Arama"></label><div id="result-wrap" class="hide"><div id="search-result"></div></div><div class="hide"><template id="search-tpl"><div class="item"><a href="/{path}" title="{title}"><div class="title">{title}</div><div class="time">{date}</div><div class="tags">{tags}</div></a></div></template></div></div></div><div id="layout" class="layout-g"><div class="layout-l"><div class="content_container"><div class="post"><h1 class="post-title">Electron 开发流程</h1><div class="post-meta"><a href="/2018/07/23/Electron开发流程/#comments" class="comment-count"></a><p><span class="date">Jul 23, 2018</span><span><i id="busuanzi_container_page_pv"><i id="busuanzi_value_page_pv"></i><i>Hits</i></i></span></p></div><div class="post-content"><blockquote>
+<ul>
+<li>0x00-文章前言</li>
+<li>0x01-知识储备</li>
+<li>0x02-测试环境</li>
+<li>0x03-方案设计</li>
+<li>0x04-实践操作</li>
+<li>0x05-总结分析</li>
+<li>0x06-程序源码</li>
+<li>0x07-参考资料</li>
+</ul>
+</blockquote>
+<h1 id="0x00-文章前言"><a href="#0x00-文章前言" class="headerlink" title="0x00-文章前言"></a>0x00-文章前言</h1><h2 id="文章目的"><a href="#文章目的" class="headerlink" title="文章目的"></a>文章目的</h2><ul>
+<li>使用Electron开发一个简单桌面应用Demo</li>
+<li>了解Electron原理及开发逻辑、流程(编写→运行→打包)</li>
+</ul>
+<h2 id="文章前景"><a href="#文章前景" class="headerlink" title="文章前景"></a>文章前景</h2><ul>
+<li>将网站构建为桌面应用程序，需求较为广泛</li>
+<li>打通了B/S架构与跨平台桌面应用程序之间的界限</li>
+<li>为后续开发复杂应用理清业务逻辑，探索开发方式</li>
+</ul>
+<h1 id="0x01-知识储备"><a href="#0x01-知识储备" class="headerlink" title="0x01-知识储备"></a>0x01-知识储备</h1><h2 id="Node-js基础"><a href="#Node-js基础" class="headerlink" title="Node.js基础"></a>Node.js基础</h2><h3 id="npm包管理"><a href="#npm包管理" class="headerlink" title="npm包管理"></a>npm包管理</h3><h4 id="安装："><a href="#安装：" class="headerlink" title="安装："></a>安装：</h4><pre><code>npm install moduleName # 安装模块到项目目录下
+
+npm install -g moduleName # -g 的意思是将模块安装到全局，具体安装到磁盘哪个位置，要看 npm config prefix 的位置。
+
+npm install -save moduleName # -save 的意思是将模块安装到项目目录下，并在package文件的dependencies节点写入依赖。
+
+npm install -save-dev moduleName # -save-dev 的意思是将模块安装到项目目录下，并在package文件的devDependencies节点写入依赖
+</code></pre><h4 id="卸载："><a href="#卸载：" class="headerlink" title="卸载："></a>卸载：</h4><pre><code>npm remove moduleName # 卸载项目目录下模块
+
+npm remove -g moduleName # -g 的意思是全局卸载模块
+
+npm remove -save moduleName # -save 的意思是卸载项目目录下模块，并在package文件的dependencies节点删除依赖。
+
+npm remove -save-dev moduleName # -save-dev 的意思是卸载项目目录下模块 ，并在package文件的devDependencies节点删除依赖
+</code></pre><h4 id="注意："><a href="#注意：" class="headerlink" title="注意："></a>注意：</h4><p>devDependencies 节点下的模块是我们在开发时需要用的，比如项目中使用的 gulp ，压缩css、js的模块。这些模块在我们的项目部署后是不需要的，所以我们可以使用 -save-dev 的形式安装。像 express 这些模块是项目运行必备的，应该安装在 dependencies 节点下，所以我们应该使用 -save 的形式安装。</p>
+<h3 id="package-lock-json-文件"><a href="#package-lock-json-文件" class="headerlink" title="package-lock.json 文件"></a>package-lock.json 文件</h3><ul>
+<li>锁定安装时的包的版本号，并且需要上传到git，以保证其他人在npm install时大家的依赖能保证一致</li>
+<li>根据官方文档，这个package-lock.json 是在 <code>npm install</code>时候生成一份文件，用以记录当前状态下实际安装的各个npm package的具体来源和版本号。</li>
+<li>npm是一个用于管理package之间依赖关系的管理器，它允许开发者在pacakge.json中间标出自己项目对npm各库包的依赖</li>
+</ul>
+<h2 id="Electron基础"><a href="#Electron基础" class="headerlink" title="Electron基础"></a>Electron基础</h2><h3 id="Electron介绍"><a href="#Electron介绍" class="headerlink" title="Electron介绍"></a>Electron介绍</h3><p>如果你可以建一个网站，你就可以建一个桌面应用程序。 Electron 是一个使用 JavaScript, HTML 和 CSS 等 Web 技术创建原生程序的框架，它负责比较难搞的部分，你只需把精力放在你的应用的核心上即可。</p>
+<h3 id="Electron文档"><a href="#Electron文档" class="headerlink" title="Electron文档"></a>Electron文档</h3><p>由 <strong>指南、API参考、高级</strong> 组成，详细介绍了Electron的使用、接口、开发等一些了问题，是Electron学习必备的文档。</p>
+<h3 id="Electron特点"><a href="#Electron特点" class="headerlink" title="Electron特点"></a>Electron特点</h3><h4 id="Web技术"><a href="#Web技术" class="headerlink" title="Web技术"></a>Web技术</h4><p>Electron 基于 Chromium 和 Node.js, 让你可以使用 HTML, CSS 和 JavaScript 构建应用。<br>这是一个整合了Node，Chromium，V8的一个框架，通过它可以使用JavaScript，HTML, CSS技术来开发桌面应用程序</p>
+<h4 id="开源"><a href="#开源" class="headerlink" title="开源"></a>开源</h4><p>Electron 是一个由 GitHub 及众多贡献者组成的活跃社区共同维护的开源项目。</p>
+<h4 id="跨平台"><a href="#跨平台" class="headerlink" title="跨平台"></a>跨平台</h4><p>Electron 兼容 Mac, Windows 和 Linux， 它构建的应用可在这三个操作系统上面运行。</p>
+<h4 id="混合开发"><a href="#混合开发" class="headerlink" title="混合开发"></a>混合开发</h4><p>随着前端技术的发展，现在越来越多的桌面应用程序会嵌入一些Web技术来进行混合开发，结合了web端和传统桌面软件各自的优点。</p>
+<h1 id="0x02-测试环境"><a href="#0x02-测试环境" class="headerlink" title="0x02-测试环境"></a>0x02-测试环境</h1><h2 id="硬件"><a href="#硬件" class="headerlink" title="硬件"></a>硬件</h2><ul>
+<li>处理器：i7</li>
+<li>内存：8G</li>
+<li>显示器：VGA 或更高</li>
+<li>硬盘空间：128G</li>
+</ul>
+<h2 id="软件"><a href="#软件" class="headerlink" title="软件"></a>软件</h2><ul>
+<li>Windows 10系统</li>
+<li>PostgreSQL</li>
+<li>Node.js</li>
+</ul>
+<h1 id="0x03-方案设计"><a href="#0x03-方案设计" class="headerlink" title="0x03-方案设计"></a>0x03-方案设计</h1><h2 id="electron-packager打包"><a href="#electron-packager打包" class="headerlink" title="electron-packager打包"></a>electron-packager打包</h2><p>创建一个简单页面，通过Electron打开、打包、更改图标、整合成安装包、更新</p>
+<h2 id="electron-builder打包"><a href="#electron-builder打包" class="headerlink" title="electron-builder打包"></a>electron-builder打包</h2><p>进一步优化，使得可以打包成安装程序，生成文件尽可能小，并且支持自动升级</p>
+<h1 id="0x04-实践操作"><a href="#0x04-实践操作" class="headerlink" title="0x04-实践操作"></a>0x04-实践操作</h1><h2 id="Electron安装"><a href="#Electron安装" class="headerlink" title="Electron安装"></a>Electron安装</h2><p>由于国外镜像不能访问的原因，所以使用国内淘宝npm镜像进行安装。</p>
+<pre><code>npm install -g package --registry=https://registry.npm.taobao.org
+</code></pre><p>也可以使用淘宝NPM开发的cnpm进行package的安装</p>
+<pre><code>//首先安装cnpm
+npm install -g cnpm --registry=https://registry.npm.taobao.org
+
+//使用cnpm进行安装，使用方法和npm相同，全局安装
+cnpm install -g electron
+
+//查看electron版本
+electron -v
+</code></pre><p><img src="/assets/blogImg/electron-use-1.png" alt=""></p>
+<p>使用npm通过淘宝镜像安装和cnpm安装，均可成功安装electron（原electron-prebuilt）。</p>
+<h2 id="创建应用"><a href="#创建应用" class="headerlink" title="创建应用"></a>创建应用</h2><p>创建一个electron应用。我们现在仅仅需要3个文件。 </p>
+<pre><code>index.html 
+main.js 
+package.json
+</code></pre><p>index.html使我们想要显示的页面，main.js为此应用的入口，package.json为npm项目的配置文件。</p>
+<ol>
+<li><p>新建一个名为electron的文件夹，进入项目目录进行初始化产生package.json文件 </p>
+<p> mkdir electron<br> cd electron<br> npm init</p>
+</li>
+</ol>
+<p>使得package.json为中名称为：HelloElectron；描述为：a simple application；scripts中添加”start”: “electron .”；署名为：xiafei_xupt,其余默认即可</p>
+<ol start="2">
+<li><p>新建一个index.html, 使得页面标题为：HelloElectron！；页面内容为：Hello Electron！</p>
+</li>
+<li><p>新建一个main.js, 内容如下：（main.js的文件名对应package.json中main的值），同时关闭调试工具。</p>
+</li>
+</ol>
+<h2 id="运行应用"><a href="#运行应用" class="headerlink" title="运行应用"></a>运行应用</h2><p>在Electron目录下执行npm start 或electron .即可运行</p>
+<p>如果你是局部安装，则运行：</p>
+<pre><code>./node_modules/.bin/electron .
+npm start
+</code></pre><p><img src="/assets/blogImg/微信图片_20180801163721.png" alt=""><br><img src="/assets/blogImg/electron-use-2.png" alt=""></p>
+<h2 id="应用打包"><a href="#应用打包" class="headerlink" title="应用打包"></a>应用打包</h2><h3 id="electron-packager打包-1"><a href="#electron-packager打包-1" class="headerlink" title="electron-packager打包"></a>electron-packager打包</h3><p><strong>安装electron-packager</strong><br>它也是一个npm模块，是一个用于打包electron应用的工具</p>
+<pre><code>npm install -g electron-packager
+electron-packager --version
+</code></pre><p><img src="/assets/blogImg/electron-use-2-0.png" alt=""></p>
+<p><strong>开始打包</strong><br>打包格式如下：</p>
+<pre><code>electron-packager &lt;sourcedir&gt; &lt;appname&gt; --platform=&lt;platform&gt; --arch=&lt;arch&gt; [optional flags...]
+</code></pre><p>但是这样并不够，会提示：<br>    Unable to determine Electron version. Please specify an Electron version<br><img src="/assets/blogImg/微信图片_20180801162943.png" alt=""><br>需要指明Electron version，改进为:</p>
+<pre><code>electron-packager &lt;sourcedir&gt; &lt;appname&gt; --platform=&lt;platform&gt; --arch=&lt;arch&gt; [optional flags...] --electron-version=&lt;electron version&gt;
+</code></pre><p>eg:</p>
+<pre><code>electron-packager . HelloElectron win32 x64 --electron-version=2.0.6
+或
+electron-packager . HelloElectron --platform=win32 --arch=x64 --electron-version=2.0.6
+</code></pre><p><img src="/assets/blogImg/微信图片_20180801170946.png" alt=""><br><strong>打包结束</strong><br>即在当前目录下生成了一个116M的HelloElectron文件夹，该文件夹内有一个65M大小的HelloElectron.exe<br>通过图形界面进入该文件夹，双击即可运行。<br><img src="/assets/blogImg/微信图片_20180801173408.png" alt=""></p>
+<p>通过查看resources\app目录，可以查看到项目的源代码。<br><img src="/assets/blogImg/微信图片_20180801173934.png" alt=""></p>
+<p><strong>补充</strong></p>
+<ol>
+<li><p>最简单一键打包命令<br>会打包生成所有你需要的各种platform各种arch的包</p>
+<p> electron-packager ./ –all<br> 即：<br> electron-packager ./ –all –electron-version=2.0.6</p>
+</li>
+</ol>
+<ol start="2">
+<li>分平台分arch打包</li>
+</ol>
+<p>platform 取值有：darwin, linux, mas, win32 。命令：</p>
+<pre><code>electron-packager ./ --platform=darwin
+electron-packager ./ --platform=linux
+electron-packager ./ --platform=mas
+electron-packager ./ --platform=win32
+</code></pre><p>不写arch的情况下，arch的取值就是打包的电脑的arch值。一般可以取值有：</p>
+<pre><code>ia32,x64,armv7l,arm64
+electron-packager ./ --arch=ia32
+electron-packager ./ --arch=x64
+electron-packager ./ --arch=armv7l
+electron-packager ./ --arch=arm64
+</code></pre><ol start="3">
+<li>新生成的包，如果你想继续实验其他选项的话，可能是难以删除的。可以增加个<code>--overwrite</code>参数，会覆盖原有的<code>build</code>。有关其他可选标志的概述，请运行<code>electron-packager --help</code>或查看 <a href="https://github.com/electron-userland/electron-packager/blob/master/usage.txt" target="_blank" rel="noopener">usage.txt</a>。有关详细说明，请参阅<a href="https://github.com/electron-userland/electron-packager/blob/master/docs/api.md" target="_blank" rel="noopener">API文档</a>。</li>
+<li><p>如果我们想要更改窗口左上角的图标和任务栏的图标，只需要在打包的命令上加个icon参数</p>
+<p> <code>--icon= &lt;ico_address&gt;</code><br>eg:<br> <code>--icon=./app/img/icon.ico</code></p>
+</li>
+</ol>
+<h3 id="electron-builder打包-1"><a href="#electron-builder打包-1" class="headerlink" title="electron-builder打包"></a>electron-builder打包</h3><p><strong>安装electron-builder</strong></p>
+<pre><code>npm install electron-builder -g
+electron-builder --version
+</code></pre><p><img src="/assets/blogImg/微信图片_20180801185434.png" alt=""></p>
+<p><strong>开始打包</strong></p>
+<p><img src="/assets/blogImg/微信图片_20180801190245.png" alt=""></p>
+<p>实际上打包过程会各种超时,建议挂代理</p>
+<p><strong>打包结束</strong><br><img src="/assets/blogImg/微信图片_20180801191543.png" alt=""><br><strong>打开应用</strong><br><img src="/assets/blogImg/微信图片_20180801192048.png" alt=""></p>
+<p><strong>安装应用</strong></p>
+<p><img src="/assets/blogImg/微信图片_20180801192607.png" alt=""><br><strong>运行应用</strong><br><img src="/assets/blogImg/微信图片_20180801192656.png" alt=""><br><img src="/assets/blogImg/微信图片_20180801192725.png" alt=""></p>
+<p><strong>补充</strong></p>
+<ol>
+<li><p>一键构建所有安装包<br>electron-builder -mwl<br>electron-builder –platform=all<br>electron-builder –win –x64</p>
+</li>
+<li><p>分平台构建安装包</p>
+</li>
+</ol>
+<p>mac：</p>
+<pre><code>electron-builder -m
+electron-builder -o
+electron-builder --mac
+electron-builder --macos
+electron-builder --platform=mac
+electron-builder --platform=darwin
+</code></pre><p>win:</p>
+<pre><code>electron-builder -w
+electron-builder --win
+electron-builder --windows
+electron-builder --platform=win
+electron-builder --platform=win32
+</code></pre><p>inux:</p>
+<pre><code>electron-builder -l
+electron-builder --linux
+electron-builder --platform=linux
+</code></pre><ol start="3">
+<li>参数说明</li>
+</ol>
+<p>–platform 这个参数是过期废弃的参数，不建议使用。同样，还有 –arch （取值是ia32/x64/all）也是一个过期参数。替代参数是 –x64 或者 –ia32 或者 –armv7l 。</p>
+<p>当 –platform 或者 –arch 没有指定的时候，就会build当前系统的platform，当前系统的arch。也就是说，下面的命令在不同的系统下，命令是不一样的。（没有指定platform和arch）。</p>
+<p>electron-builder –help 可查看相关用法</p>
+<ol start="4">
+<li><p>latest.yml为与更新相关文件，了打包时生成latest.yml文件，需要在 build 参数中添加 publish 配置，即：</p>
+<p> “publish”: [<br>   {<br> “provider”: “generic”,<br> “url”: “<a href="http://localhost:4000/version&quot;//更新服务器地址" target="_blank" rel="noopener">http://localhost:4000/version&quot;//更新服务器地址</a><br>   }<br> ]<br>则：<br><img src="/assets/blogImg/微信图片_20180801223134.png" alt=""></p>
+</li>
+</ol>
+<p><strong>注意</strong></p>
+<ol>
+<li><p>devDependencies与dependencies的区别<br>dependencies 表示我们要在生产环境下使用该依赖，devDependencies 则表示我们仅在开发环境使用该依赖。在打包时，一定要分清哪些包属于生产依赖，哪些属于开发依赖，尤其是在项目较大，依赖包较多的情况下。若在生产环境下错应或者少引依赖包，即便是成功打包，但在使用应用程序期间也会报错，导致打包好的程序无法正常运行。</p>
+</li>
+<li><p>npm与cnpm的区别<br>说到npm与cnpm的区别，可能大家都知道，但大家容易忽视的一点，是cnpm装的各种node_module，这种方式下所有的包都是扁平化的安装。一下子node_modules展开后有非常多的文件。<br>导致了在打包的过程中非常慢。但是如果改用npm来安装node_modules的话，所有的包都是树状结构的，层级变深。<br>由于这个不同，对一些项目比较大的应用，很容易出现打包过程慢且node内存溢出的问题（这也是在解决electron打包过程中困扰我比较久的问题，最后想到了npm与cnpm的这点不同，解决了node打包内存溢出的问题，从打包一次一小时优化到打包一次一分钟，极大的提高了效率）。<br>所以建议在打包前，将使用cnpm安装的依赖包删除，替换成npm安装的依赖包。</p>
+</li>
+</ol>
+<h1 id="0x05-总结分析"><a href="#0x05-总结分析" class="headerlink" title="0x05-总结分析"></a>0x05-总结分析</h1><h2 id="文章结论"><a href="#文章结论" class="headerlink" title="文章结论"></a>文章结论</h2><h3 id="electron-packager打包-2"><a href="#electron-packager打包-2" class="headerlink" title="electron-packager打包"></a>electron-packager打包</h3><ol>
+<li>支持平台有：Windows (32/64 bit)、OS X (also known as macOS)、Linux (x86/x86_64);</li>
+<li>进行应用更新时，使用electron内置的autoUpdate进行更新</li>
+<li>支持CLI和JS API两种使用方式；</li>
+</ol>
+<h3 id="electron-builder打包-2"><a href="#electron-builder打包-2" class="headerlink" title="electron-builder打包"></a>electron-builder打包</h3><ol>
+<li>electron-builder 可以打包成msi、exe、dmg文件，macOS系统，只能打包dmg文件，window系统才能打包exe，msi文件；</li>
+<li>几乎支持了所有平台的所有格式；</li>
+<li>支持Auto Update；</li>
+<li>支持CLI和JS API两种使用方式；</li>
+</ol>
+<h3 id="electron应用整合成一个安装包"><a href="#electron应用整合成一个安装包" class="headerlink" title="electron应用整合成一个安装包"></a>electron应用整合成一个安装包</h3><p>另外可以使用下面两种方法：</p>
+<ol>
+<li><a href="http://blog.csdn.net/yu17310133443/article/details/79496499" target="_blank" rel="noopener">NSIS打包Electron</a>    </li>
+<li><a href="http://blog.csdn.net/yu17310133443/article/details/79495936" target="_blank" rel="noopener">grunt打包Electron</a> </li>
+</ol>
+<h2 id="文章分析"><a href="#文章分析" class="headerlink" title="文章分析"></a>文章分析</h2><p>本文使用Electron创建一个简单页面，实现了打开、打包、更改图标、整合成安装包等功能，展示了Electron应用开发的简单流程，使得开发逻辑更加清晰，开发过程更加具体，开发目的更加明确。</p>
+<p>使用electron-packager打包生成文件较大，且是以文件夹形式生成，较为臃肿；源码暴露，不安全</p>
+<p>使用electron-builder打包应用是安装包方式，而不像electron-packager打包之后直接是一个文件夹，里面所有的文件暴露出来。 </p>
+<p>其中关于应用打包工具，推荐使用electron-builder打包，相比electron-packager有以下优点：</p>
+<ol>
+<li>支持更多的平台</li>
+<li>支持了自动更新</li>
+<li>打出的包更为轻量</li>
+<li>打出的包不暴露源码</li>
+<li>可以打包出setup安装程序</li>
+</ol>
+<h1 id="0x06-程序源码"><a href="#0x06-程序源码" class="headerlink" title="0x06-程序源码"></a>0x06-程序源码</h1><h2 id="package-json"><a href="#package-json" class="headerlink" title="package.json"></a>package.json</h2><pre><code>{
+  &quot;name&quot;: &quot;HelloElectron&quot;,
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;description&quot;: &quot;a simple application&quot;,
+  &quot;main&quot;: &quot;main.js&quot;,
+  &quot;scripts&quot;: {
+    &quot;test&quot;: &quot;echo \&quot;Error: no test specified\&quot; &amp;&amp; exit 1&quot;,
+    &quot;start&quot;: &quot;electron .&quot;
+  },
+  &quot;author&quot;: &quot;xiafei_xupt&quot;,
+  &quot;license&quot;: &quot;ISC&quot;
+}    
+</code></pre><h2 id="index-html"><a href="#index-html" class="headerlink" title="index.html"></a>index.html</h2><pre><code>&lt;!DOCTYPE html&gt;  
+&lt;html&gt;  
+  &lt;head&gt;  
+&lt;title&gt;HelloElectron！&lt;/title&gt;  
+  &lt;/head&gt;  
+  &lt;body&gt;  
+&lt;h1&gt;Hello Electron!&lt;/h1&gt;  
+  &lt;/body&gt;  
+&lt;/html&gt; 
+</code></pre><h2 id="main-js"><a href="#main-js" class="headerlink" title="main.js"></a>main.js</h2><pre><code>const {app, BrowserWindow} = require(&apos;electron&apos;);
+let win;
+let windowConfig = {
+width:800,
+height:600
+};
+function createWindow(){
+win = new BrowserWindow(windowConfig);
+win.loadURL(`file://${__dirname}/index.html`);//接口
+//开启调试工具
+//win.webContents.openDevTools();
+win.on(&apos;close&apos;,() =&gt; {
+//回收BrowserWindow对象
+win = null;
+});
+win.on(&apos;resize&apos;,() =&gt; {
+win.reload();
+})
+}
+
+app.on(&apos;ready&apos;,createWindow);
+app.on(&apos;window-all-closed&apos;,() =&gt; {
+app.quit();
+});
+
+app.on(&apos;activate&apos;,() =&gt; {
+if(win == null){
+createWindow();
+}
+})
+</code></pre><h2 id="Electron-Demo打包"><a href="#Electron-Demo打包" class="headerlink" title="Electron Demo打包"></a>Electron Demo打包</h2><p>为避免命名冲突，重命名为<a href="https://pan.baidu.com/s/15miRWxA6Qj8cv9cCB2ydhw" target="_blank" rel="noopener">electron-v1.0.0</a>（密码：<code>dkes</code>）</p>
+<h1 id="0x07-参考资料"><a href="#0x07-参考资料" class="headerlink" title="0x07-参考资料"></a>0x07-参考资料</h1><ul>
+<li><a href="https://www.npmjs.com/package/electron-packager" target="_blank" rel="noopener">electron-packager文档</a></li>
+<li><a href="https://electronjs.org/" target="_blank" rel="noopener">Electron官网</a></li>
+<li><a href="https://electronjs.org/docs" target="_blank" rel="noopener">Electron 文档</a></li>
+<li><a href="https://electronjs.org/docs/tutorial/first-app" target="_blank" rel="noopener">打造你第一个 Electron 应用</a></li>
+<li><a href="https://newsn.net/say/electron-packager-basic.html" target="_blank" rel="noopener">electron-packager打包工具的最简化使用</a></li>
+<li><a href="https://segmentfault.com/a/1190000013924153" target="_blank" rel="noopener">electron打包：electron-packager及electron-builder两种方式实现</a></li>
+</ul>
+</div><div class="tags"><a href="/tags/Electron/">Electron</a></div><div class="post-share"></div><div class="post-nav"><a href="/2018/07/30/日志分析及数据库表的设计/" class="pre">日志分析及数据库表的设计</a><a href="/2018/07/16/PostgreSQL语法学习/" class="next">PostgreSQL语法学习</a></div><div id="comments"></div></div></div></div><div class="layout-r"><div id="sidebar"><div class="search-pla"></div><div id="toc" class="widget"><div class="widget-title"><i class="fa fa-fei">Contents</i></div><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#0x00-文章前言"><span class="toc-text">0x00-文章前言</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#文章目的"><span class="toc-text">文章目的</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#文章前景"><span class="toc-text">文章前景</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x01-知识储备"><span class="toc-text">0x01-知识储备</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Node-js基础"><span class="toc-text">Node.js基础</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#npm包管理"><span class="toc-text">npm包管理</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#安装："><span class="toc-text">安装：</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#卸载："><span class="toc-text">卸载：</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#注意："><span class="toc-text">注意：</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#package-lock-json-文件"><span class="toc-text">package-lock.json 文件</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Electron基础"><span class="toc-text">Electron基础</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Electron介绍"><span class="toc-text">Electron介绍</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Electron文档"><span class="toc-text">Electron文档</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Electron特点"><span class="toc-text">Electron特点</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Web技术"><span class="toc-text">Web技术</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#开源"><span class="toc-text">开源</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#跨平台"><span class="toc-text">跨平台</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#混合开发"><span class="toc-text">混合开发</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x02-测试环境"><span class="toc-text">0x02-测试环境</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#硬件"><span class="toc-text">硬件</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#软件"><span class="toc-text">软件</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x03-方案设计"><span class="toc-text">0x03-方案设计</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#electron-packager打包"><span class="toc-text">electron-packager打包</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#electron-builder打包"><span class="toc-text">electron-builder打包</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x04-实践操作"><span class="toc-text">0x04-实践操作</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Electron安装"><span class="toc-text">Electron安装</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#创建应用"><span class="toc-text">创建应用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#运行应用"><span class="toc-text">运行应用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#应用打包"><span class="toc-text">应用打包</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#electron-packager打包-1"><span class="toc-text">electron-packager打包</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#electron-builder打包-1"><span class="toc-text">electron-builder打包</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x05-总结分析"><span class="toc-text">0x05-总结分析</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#文章结论"><span class="toc-text">文章结论</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#electron-packager打包-2"><span class="toc-text">electron-packager打包</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#electron-builder打包-2"><span class="toc-text">electron-builder打包</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#electron应用整合成一个安装包"><span class="toc-text">electron应用整合成一个安装包</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#文章分析"><span class="toc-text">文章分析</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x06-程序源码"><span class="toc-text">0x06-程序源码</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#package-json"><span class="toc-text">package.json</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#index-html"><span class="toc-text">index.html</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#main-js"><span class="toc-text">main.js</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Electron-Demo打包"><span class="toc-text">Electron Demo打包</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x07-参考资料"><span class="toc-text">0x07-参考资料</span></a></li></ol></div><div class="widget"><div class="widget-title"><i class="fa fa-xie"> Recent</i></div><ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2026/01/04/博客模板/">博客模板</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/20/Electron应用开发/">Electron应用开发</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/13/BlurAdmin模板学习/">BlurAdmin模板学习</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/06/PostgreSQL操作接口/">PostgreSQL操作接口</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/30/日志分析及数据库表的设计/">日志分析及数据库表的设计</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/23/Electron开发流程/">Electron 开发流程</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/16/PostgreSQL语法学习/">PostgreSQL语法学习</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/09/PostgreSQL环境搭建/">PostgreSQL环境搭建</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/02/数据库方向/">数据库方向</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/06/25/proc目录下信息提取/">Linux /proc目录下信息提取</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-biao"> Tags</i></div><div class="tagcloud"><a href="/tags/安全/" style="font-size: 15px;">安全</a> <a href="/tags/Electron/" style="font-size: 15px;">Electron</a> <a href="/tags/FAQ/" style="font-size: 15px;">FAQ</a> <a href="/tags/Kernel/" style="font-size: 15px;">Kernel</a> <a href="/tags/实习/" style="font-size: 15px;">实习</a> <a href="/tags/JavaScript/" style="font-size: 15px;">JavaScript</a> <a href="/tags/PostgreSQL/" style="font-size: 15px;">PostgreSQL</a> <a href="/tags/旧事/" style="font-size: 15px;">旧事</a> <a href="/tags/红线/" style="font-size: 15px;">红线</a> <a href="/tags/博客/" style="font-size: 15px;">博客</a> <a href="/tags/Linux/" style="font-size: 15px;">Linux</a> <a href="/tags/模板/" style="font-size: 15px;">模板</a> <a href="/tags/操作系统/" style="font-size: 15px;">操作系统</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-archive"> Archive</i></div><ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/01/">January 2026</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/08/">August 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/07/">July 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/04/">April 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/03/">March 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/06/">June 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/05/">May 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/04/">April 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/03/">March 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04/">April 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/03/">March 2014</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-you"> Blogroll</i></div><ul></ul><a href="http://www.example1.com/" title="site-name1" target="_blank">site-name1</a><ul></ul><a href="http://www.example2.com/" title="site-name2" target="_blank">site-name2</a><ul></ul><a href="http://www.example3.com/" title="site-name3" target="_blank">site-name3</a></div></div></div></div><a id="totop" href="#top"></a><div id="footer"><div class="footer-info"><p><a href="/baidusitemap.xml">Baidu Site Haritası</a> |  <a href="/atom.xml">RSS</a> |  <a href="/about/">About</a></p><p>本站总访问量：<i id="busuanzi_container_site_pv"><i id="busuanzi_value_site_pv"></i></i>次</p><p><span> Copyright &copy;<a href="/." rel="nofollow">xiafei-xupt.</a></span><span> Theme by<a rel="nofollow" target="_blank" href="https://github.com/chaooo/hexo-theme-BlueLake"> BlueLake.</a></span><span> Count by<a href="http://busuanzi.ibruce.info/"> busuanzi.</a></span><span> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a></span></p></div></div></div><script src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js" async></script><script type="text/javascript" src="/js/search.json.js?v=2.0.1"></script><script type="text/javascript" src="/js/toctotop.js?v=2.0.1" async></script></body></html>
