@@ -1,0 +1,264 @@
+<!DOCTYPE html><html lang="en"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description"><title> | xiafei-xupt's blog</title><link rel="stylesheet" type="text/css" href="//fonts.css.network/css?family=Source+Code+Pro"><link rel="stylesheet" type="text/css" href="/css/style.css?v=2.0.1"><link rel="stylesheet" type="text/css" href="/css/highlight.css?v=2.0.1"><link rel="Shortcut Icon" href="/favicon.ico"><link rel="bookmark" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><link rel="alternate" type="application/atom+xml" href="/atom.xml"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">xiafei-xupt's blog</h1><a id="logo" href="/.">xiafei-xupt's blog</a><p class="description">汝之意志所向,即吾剑之所指</p></div><div id="nav-menu"><a href="/." class="current"><i class="fa fa-home"> Home</i></a><a href="/about/"><i class="fa fa-user"> About</i></a><a href="/atom.xml"><i class="fa fa-rss"> RSS</i></a></div><div id="search-form"><div id="result-mask" class="hide"></div><label><input id="search-key" type="text" autocomplete="off" placeholder="Arama"></label><div id="result-wrap" class="hide"><div id="search-result"></div></div><div class="hide"><template id="search-tpl"><div class="item"><a href="/{path}" title="{title}"><div class="title">{title}</div><div class="time">{date}</div><div class="tags">{tags}</div></a></div></template></div></div></div><div id="layout" class="layout-g"><div class="layout-l"><div class="content_container"><div class="post"><h1 class="post-title"></h1><div class="post-meta"><a href="/2018/08/29/编译和链接/#comments" class="comment-count"></a><p><span class="date">Aug 29, 2018</span><span><i id="busuanzi_container_page_pv"><i id="busuanzi_value_page_pv"></i><i>Hits</i></i></span></p></div><div class="post-content"><h1 id="第一章-编译和链接"><a href="#第一章-编译和链接" class="headerlink" title="第一章 编译和链接"></a>第一章 编译和链接</h1><p>C语言是我们熟悉的一门语言，当我们编辑了一个C程序，然后再编译和链接，形成可执行文件在操作系统下执行时，我们是否会发出以下疑问：</p>
+<ol>
+<li>C语言代码为什么要编译后才能执行？整个过程中编译器都做了什么？</li>
+<li>C代码中经常会包含头文件，那么，什么是头文件？什么又是C语言库？</li>
+<li>我们经常说main函数是C语言程序的入口，难道不能把其它函数当入口？</li>
+<li>不同的操作系统上编译好的程序可以直接拷贝过去运行吗？</li>
+</ol>
+<p>如果上面的问题你都能回答的话，那么就可以跳过本节。如果你不知道或者不是很清楚，那么我们就顺着这个思路探究下去。</p>
+<h2 id="1-C语言代码为什么要编译后才能执行？整个过程中编译器都做了什么？"><a href="#1-C语言代码为什么要编译后才能执行？整个过程中编译器都做了什么？" class="headerlink" title="1. C语言代码为什么要编译后才能执行？整个过程中编译器都做了什么？"></a>1. C语言代码为什么要编译后才能执行？整个过程中编译器都做了什么？</h2><p>我们以最经典的HelloWorld程序为例。先使用vim等文本编辑器写好代码，接着在终端执行编译命令（使用的Linux系统是Debian）：</p>
+<pre><code>gcc HelloWorld.c -o HelloWorld 
+</code></pre><p>这条命令在编译的同时进行了链接，形成了可执行文件HelloWorld，最后我们在终端执行 ./HelloWorld，顺利地显示了输出结果。</p>
+<pre><code>debian@bogon:~/Documents/HelloWorld$ vim HelloWorld.c
+debian@bogon:~/Documents/HelloWorld$ gcc HelloWorld.c -o HelloWorld
+debian@bogon:~/Documents/HelloWorld$ ./HelloWorld 
+Hello World!
+debian@bogon:~/Documents/HelloWorld$
+</code></pre><p>可是，简单的命令背后经过了什么样的处理过程？gcc真的就“直接”生成了最后的可执行文件了？当然不是，我们在gcc编译命令行加上参数 –verbose要求gcc输出完整的处理过程(命令行加上 -v 也行)，我们看到了一段较长的过程输出。</p>
+<pre><code>debian@bogon:~/Documents/HelloWorld$ gcc --verbose HelloWorld.c -o HelloWorld
+Using built-in specs.
+COLLECT_GCC=gcc
+COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-linux-gnu/6/lto-wrapper
+Target: x86_64-linux-gnu
+Configured with: ../src/configure -v --with-pkgversion=&apos;Debian 6.3.0-18+deb9u1&apos; --with-bugurl=file:///usr/share/doc/gcc-6/README.Bugs --enable-languages=c,ada,c++,java,go,d,fortran,objc,obj-c++ --prefix=/usr --program-suffix=-6 --program-prefix=x86_64-linux-gnu- --enable-shared --enable-linker-build-id --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --libdir=/usr/lib --enable-nls --with-sysroot=/ --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --with-default-libstdcxx-abi=new --enable-gnu-unique-object --disable-vtable-verify --enable-libmpx --enable-plugin --enable-default-pie --with-system-zlib --disable-browser-plugin --enable-java-awt=gtk --enable-gtk-cairo --with-java-home=/usr/lib/jvm/java-1.5.0-gcj-6-amd64/jre --enable-java-home --with-jvm-root-dir=/usr/lib/jvm/java-1.5.0-gcj-6-amd64 --with-jvm-jar-dir=/usr/lib/jvm-exports/java-1.5.0-gcj-6-amd64 --with-arch-directory=amd64 --with-ecj-jar=/usr/share/java/eclipse-ecj.jar --with-target-system-zlib --enable-objc-gc=auto --enable-multiarch --with-arch-32=i686 --with-abi=m64 --with-multilib-list=m32,m64,mx32 --enable-multilib --with-tune=generic --enable-checking=release --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu
+Thread model: posix
+gcc version 6.3.0 20170516 (Debian 6.3.0-18+deb9u1) 
+COLLECT_GCC_OPTIONS=&apos;-v&apos; &apos;-o&apos; &apos;HelloWorld&apos; &apos;-mtune=generic&apos; &apos;-march=x86-64&apos;
+ /usr/lib/gcc/x86_64-linux-gnu/6/cc1 -quiet -v -imultiarch x86_64-linux-gnu HelloWorld.c -quiet -dumpbase HelloWorld.c -mtune=generic -march=x86-64 -auxbase HelloWorld -version -o /tmp/ccKizfOU.s
+GNU C11 (Debian 6.3.0-18+deb9u1) version 6.3.0 20170516 (x86_64-linux-gnu)
+    compiled by GNU C version 6.3.0 20170516, GMP version 6.1.2, MPFR version 3.1.5, MPC version 1.0.3, isl version 0.15
+GGC heuristics: --param ggc-min-expand=62 --param ggc-min-heapsize=60678
+ignoring nonexistent directory &quot;/usr/local/include/x86_64-linux-gnu&quot;
+ignoring nonexistent directory &quot;/usr/lib/gcc/x86_64-linux-gnu/6/../../../../x86_64-linux-gnu/include&quot;
+#include &quot;...&quot; search starts here:
+#include &lt;...&gt; search starts here:
+ /usr/lib/gcc/x86_64-linux-gnu/6/include
+ /usr/local/include
+ /usr/lib/gcc/x86_64-linux-gnu/6/include-fixed
+ /usr/include/x86_64-linux-gnu
+ /usr/include
+End of search list.
+GNU C11 (Debian 6.3.0-18+deb9u1) version 6.3.0 20170516 (x86_64-linux-gnu)
+    compiled by GNU C version 6.3.0 20170516, GMP version 6.1.2, MPFR version 3.1.5, MPC version 1.0.3, isl version 0.15
+GGC heuristics: --param ggc-min-expand=62 --param ggc-min-heapsize=60678
+Compiler executable checksum: b8e5d7f3c4236757ee0871869b8330f3
+COLLECT_GCC_OPTIONS=&apos;-v&apos; &apos;-o&apos; &apos;HelloWorld&apos; &apos;-mtune=generic&apos; &apos;-march=x86-64&apos;
+ as -v --64 -o /tmp/ccyb9gCU.o /tmp/ccKizfOU.s
+GNU assembler version 2.28 (x86_64-linux-gnu) using BFD version (GNU Binutils for Debian) 2.28
+COMPILER_PATH=/usr/lib/gcc/x86_64-linux-gnu/6/:/usr/lib/gcc/x86_64-linux-gnu/6/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/6/:/usr/lib/gcc/x86_64-linux-gnu/
+LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/6/:/usr/lib/gcc/x86_64-linux-gnu/6/../../../x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/6/../../../../lib/:/lib/x86_64-linux-gnu/:/lib/../lib/:/usr/lib/x86_64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/6/../../../:/lib/:/usr/lib/
+COLLECT_GCC_OPTIONS=&apos;-v&apos; &apos;-o&apos; &apos;HelloWorld&apos; &apos;-mtune=generic&apos; &apos;-march=x86-64&apos;
+ /usr/lib/gcc/x86_64-linux-gnu/6/collect2 -plugin /usr/lib/gcc/x86_64-linux-gnu/6/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-linux-gnu/6/lto-wrapper -plugin-opt=-fresolution=/tmp/ccj2W1uU.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s --sysroot=/ --build-id --eh-frame-hdr -m elf_x86_64 --hash-style=gnu -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie -o HelloWorld /usr/lib/gcc/x86_64-linux-gnu/6/../../../x86_64-linux-gnu/Scrt1.o /usr/lib/gcc/x86_64-linux-gnu/6/../../../x86_64-linux-gnu/crti.o /usr/lib/gcc/x86_64-linux-gnu/6/crtbeginS.o -L/usr/lib/gcc/x86_64-linux-gnu/6 -L/usr/lib/gcc/x86_64-linux-gnu/6/../../../x86_64-linux-gnu -L/usr/lib/gcc/x86_64-linux-gnu/6/../../../../lib -L/lib/x86_64-linux-gnu -L/lib/../lib -L/usr/lib/x86_64-linux-gnu -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-linux-gnu/6/../../.. /tmp/ccyb9gCU.o -lgcc --as-needed -lgcc_s --no-as-needed -lc -lgcc --as-needed -lgcc_s --no-as-needed /usr/lib/gcc/x86_64-linux-gnu/6/crtendS.o /usr/lib/gcc/x86_64-linux-gnu/6/../../../x86_64-linux-gnu/crtn.o
+COLLECT_GCC_OPTIONS=&apos;-v&apos; &apos;-o&apos; &apos;HelloWorld&apos; &apos;-mtune=generic&apos; &apos;-march=x86-64&apos;
+debian@bogon:~/Documents/HelloWorld$
+</code></pre><p>在此，我们不截取输出结果的完整图了，但你可以自己试验，然后试着分析整个流程。</p>
+<p>图1是gcc编译过程的分解图：</p>
+<p><img src="https://i.imgur.com/adD90hj.png" alt=""></p>
+<p>从图中我们大致可以看出gcc处理HelloWorld.c的大致过程：</p>
+<p>预处理(Prepressing)—&gt;编译(Compilation)—&gt;汇编(Assembly)—&gt;链接(Linking)</p>
+<p>括号中注明了各个过程中实际执行任务的程序名称：预处理器cpp、编译器cc1、汇编器as以及最后的链接器ld。</p>
+<h2 id="2-预处理到底做什么？"><a href="#2-预处理到底做什么？" class="headerlink" title="2. 预处理到底做什么？"></a>2. 预处理到底做什么？</h2><p>我们在终端输入命令 <code>gcc -E HelloWorld.c -o HelloWorld.i</code>，然后打开输出文件HelloWorld.i：</p>
+<pre><code># 1 &quot;/usr/include/x86_64-linux-gnu/bits/wordsize.h&quot; 1 3 4
+# 28 &quot;/usr/include/x86_64-linux-gnu/bits/types.h&quot; 2 3 4
+
+
+typedef unsigned char __u_char;
+typedef unsigned short int __u_short;
+typedef unsigned int __u_int;
+typedef unsigned long int __u_long;
+</code></pre><p>首先是大段的变量和函数的声明，我们的代码找不到了，到底去哪了？在vim编辑环境的普通模式中按下shift+g(大写G)跳到文件的底部，终于在几千行以后看到了我们可怜兮兮的几行代码。   </p>
+<pre><code>int main(){
+ printf(&quot;Hello World!\n&quot;);
+ return 0;
+}
+</code></pre><p>前面几千行代码是做什么的？其实它就是 /usr/include/stdio.h 文件的所有内容，预处理器把所有的#include替换为实际文件的内容了。这个过程是递归进行的，所以stdio.h里面的#include也被实际内容所替换了。</p>
+<p>而且我在HelloWorld.c里面的所有注释被预处理器全部删除了。就连printf语句前的Tab缩进也被替换为一个空格了，显得代码都不美观了。</p>
+<p>通过观察这些内容，我们梳理出预处理器处理的大致所做的事情：</p>
+<ul>
+<li>展开所有的宏定义并删除 #define</li>
+<li>处理所有的条件编译指令，例如 #if #else #endif #ifndef …</li>
+<li>把所有的 #include 替换为头文件实际内容，递归进行</li>
+<li>把所有的注释 // 和 / / 替换为空格</li>
+<li>添加行号和文件名标识以供编译器使用</li>
+<li>保留所有的 #pragma 指令，因为编译器要使用</li>
+</ul>
+<p>基本上就是这些内容。（在这里顺便插播一个小技巧，在代码中有时候宏定义比较复杂的时候我们很难判断其处理后的结构是否正确。这个时候我们就可以使用gcc的-E参数输出处理结果来判断）</p>
+<p>前文中我们提到头文件中存放的是变量定义和函数声明等等内容。这些内容到底是什么？其实在早期调用函数时并不需要声明，后来因为“笔误”之类的错误实在太多，造成了链接期间的错误过多，所有编译器开始要求对所有使用的变量或者函数给出声明，以支持编译器进行参数检查和类型匹配。头文件包含的基本上就是这些东西和一些预先的宏定义来方便程序员编程。其实对于我们的HelloWorld.c程序来说不需要这个庞大的头文件，只需要在main函数前声明printf函数，不需要#include即可通过编译。</p>
+<p>声明如下：</p>
+<pre><code>int printf(const char *format, ...);
+</code></pre><p>大家可以自行测试。另外再补充一点，gcc其实并不要求函数一定要在被调用之前定义或者声明，因为gcc在处理到某个未知类型的函数时，会为其创建一个隐式声明，并假设该函数返回值类型为int。但gcc此时无法检查传递给该函数的实参类型和个数是否正确，不利于编译器为我们排除错误（而且如果该函数的返回值不是int的话也会出错）。所以还是建议大家在函数调用前，先对其定义或声明。</p>
+<h2 id="3-编译做什么？"><a href="#3-编译做什么？" class="headerlink" title="3. 编译做什么？"></a>3. 编译做什么？</h2><p>了解了预处理之后，我们接着看编译和汇编。什么是编译？一句话描述：编译就是把预处理之后的文件进行一系列词法分析、语法分析、语义分析以及优化后生成的相应汇编代码文件。</p>
+<p>怎么查看编译后的汇编代码？命令：</p>
+<pre><code>gcc -S HelloWorld.c -o HelloWorld.s
+</code></pre><p>这样输出了汇编代码文件HelloWorld.s，其实输出的文件名可以随意。顺便说一句，这里生成的汇编是AT&amp;T风格的汇编代码，如果大家更熟悉Intel风格，可以在命令行加上参数 -masm=intel ,这样gcc就会生成Intel风格的汇编代码了（如图）。不过gcc的内联汇编只支持AT&amp;T风格，我们在第二章会给予介绍。</p>
+<pre><code>    .file    &quot;HelloWorld.c&quot;
+    .intel_syntax noprefix
+    .section    .rodata
+.LC0:
+    .string    &quot;Hello World!&quot;
+    .text
+    .globl    main
+    .type    main, @function
+main:
+.LFB0:
+    .cfi_startproc
+    push    rbp
+    .cfi_def_cfa_offset 16
+    .cfi_offset 6, -16
+    mov    rbp, rsp
+    .cfi_def_cfa_register 6
+    lea    rdi, .LC0[rip]
+    call    puts@PLT
+    mov    eax, 0
+    pop    rbp
+    .cfi_def_cfa 7, 8
+    ret
+    .cfi_endproc
+.LFE0:
+    .size    main, .-main
+    .ident    &quot;GCC: (Debian 6.3.0-18+deb9u1) 6.3.0 20170516&quot;
+    .section    .note.GNU-stack,&quot;&quot;,@progbits
+</code></pre><h2 id="4-汇编做什么？"><a href="#4-汇编做什么？" class="headerlink" title="4. 汇编做什么？"></a>4. 汇编做什么？</h2><p>我们继续用一句话来描述：汇编就是将编译后的汇编代码翻译为机器码，几乎每一条汇编指令对应一句机器码。</p>
+<p>命令：</p>
+<pre><code>gcc -c HelloWorld.c 
+</code></pre><p>可以让编译器只进行到生成目标文件这一步，这样我们就能在目录下看到HelloWorld.o文件了。</p>
+<p>Linux下的可执行文件以及目标文件的格式叫作ELF(Executable Linkable Format)。其实Windows下的PE(Portable Executable)也好，Linux下的ELF也罢，都是COFF(Common file format)格式的一种变种，甚至Windows下的目标文件就是以COFF格式去存储的。不同的操作系统之间的可执行文件的格式通常是不一样的，所以造成了编译好的HelloWorld没有办法直接复制执行，而需要在相关平台上重新编译。当然了，不能运行的原因不只是这一点，不同的操作系统接口（windows API和Linux的API不同）以及相关的类库不同也是原因之一。</p>
+<p>更详细的内容可以参看《程序员的自我修养》了解。</p>
+<h2 id="5-链接做什么？"><a href="#5-链接做什么？" class="headerlink" title="5. 链接做什么？"></a>5. 链接做什么？</h2><p>这一步是将汇编产生的目标文件和所使用的库函数的目标文件链接生成一个可执行文件的过程。在这里稍微的扩展一下篇幅，稍微详细的说一说链接，一是链接造成的错误通常难以理解和处理，二是在开发中使用第三方库越来越常见了，大家可能更需要稍微了解一些细节。</p>
+<p>首先介绍一下gnu binutils工具包，这是一整套的二进制分析处理工具包。详细介绍请大家参考维基百科：<a href="http://zh.wikipedia.org/wiki/GNU_Binutils" target="_blank" rel="noopener">http://zh.wikipedia.org/wiki/GNU_Binutils</a></p>
+<p>一般系统安装包中都带了这套工具包，如果你的发行版没有，请自行搜索进行安装。</p>
+<p>这套工具包含了足够多的工具，我们甚至可以用来研究ELF文件的格式等内容。不过本节只是抛砖引玉，更多的使用方法和技巧还是需要大家自己去学习和研究。</p>
+<p>链接这个话题涉及的内容相当广泛，为了避免本节牵扯到过多的话题导致言之泛泛，我们先设定本节讨论的范围。在这里只讨论链接进行的大致步骤及其规则、静态链接库与动态链接库的创建和使用这两大问题。至于可执行文件的加载、可执行文件的运行时储存器映像之类的内容我们暂时不讨论。<br>那么，什么是链接？我们引用《深入理解计算机系统》中的定义：链接（linking）是将各种代码和数据部分收集起来并组合成为一个单一文件的过程，这个文件可被加载（或被拷贝）到存储器并执行。</p>
+<p>需要强调的是，链接可以执行于编译时（compile time），也就是在源代码被翻译成机器代码时；也可以执行于加载时，也就是在程序被加载器（loader）加载到存储器并执行时；甚至执行于运行时（run time），由应用程序来执行。</p>
+<p>那么，了解链接到底有什么用？继续引用《深入理解计算机系统》的说法，如下：</p>
+<ol>
+<li>理解链接器将帮助你构造大型程序。</li>
+<li>理解链接器将帮助你避免一些危险的编程错误。</li>
+<li>理解链接将帮助你理解语言的作用域是如何实现的。</li>
+<li>理解链接将帮助你理解其他重要的系统概念。</li>
+<li>理解链接将使你能够利用共享库。</li>
+</ol>
+<p>言归正传。为了避免我们的描述过于枯燥，我们还是以C语言为例。大家通过我们前面的描述，已经知道C代码编译后的目标文件了。目标文件最终要和标准库进行链接生成最后的可执行文件。那么，标准库和我们生成的目标文件是什么关系？</p>
+<p>其实，任何一个程序，它的背后都有一套庞大的代码在支撑着它，以使得该程序能够正常运行。这套代码至少包括入口函数、以及其所依赖的函数构成的函数集合。当然，它还包含了各种标准库函数的实现。</p>
+<p>这个“支撑模块”就叫做运行时库（Runtime Library）。而C语言的运行库，即被称为C运行时库（CRT）。</p>
+<p>CRT大致包括：启动与退出相关的代码（包括入口函数及入口函数所依赖的其他函数）、标准库函数（ANSI C标准规定的函数实现）、I/O相关、堆的封装实现、语言特殊功能的实现以及调试相关。其中标准库函数的实现占据了主要地位。标准库函数比如我们平时常用的printf，scanf函数等。C语言标准库在不同的平台上实现了不同的版本，我们只要依赖其接口定义，就能保证程序在不同平台上的一致行为。C语言标准库有24个，囊括标准输入输出、文件操作、字符串操作、数学函数以及日期等等内容。大家有兴趣的可以自行搜索。</p>
+<h3 id="5-1-静态链接库"><a href="#5-1-静态链接库" class="headerlink" title="5.1 静态链接库"></a>5.1 静态链接库</h3><p>既然C语言提供了标准库函数供我们使用，那么以什么形式提供？是源代码吗？当然不是。下面引入静态链接库的概念。我们几乎每一次写程序都难免去使用库函数，那么每一次去编译岂不是太麻烦了。干嘛不把标准库函数提前编译好，需要的时候直接链接？是的，标准库就是这么做的。<br>那么，标准库以什么形式存在？是一个目标文件？我们知道，链接的最小单位就是一个个目标文件，如果我们只用到一个printf函数，但需要和整个库链接的话岂不是太浪费资源了么？但是，如果把库函数分别定义在彼此独立的代码文件中，这样编译出后就形成一大堆目标文件。所以，编辑器系统提供了一种机制，将所有的编译出来的目标文件打包成一个单独的文件，叫做静态库（static library）。当链接器和静态库链接的时候，链接器会从这个打包的文件中“解压缩”出需要的部分目标文件进行链接。这样就解决了资源浪费的问题。</p>
+<p>Linux/Unix系统下ANSI C的库名叫做libc.a，另外数学函数单独在libm.a库中。当了解以上相关知识后，我们试着自己做一个静态库。为了简单起见我们就做一个只有两个函数的私有库。</p>
+<p>在swap.c里定义一个swap函数，在add.c里定义了一个add函数。最后还有含有它们声明的calc.h头文件。</p>
+<pre><code>// swap.c
+void swap(int *num1, int *num2)
+{
+    int tmp = *num1;
+    *num1 = *num2;
+    *num2 = tmp;
+}
+// add.c
+int add(int a, int b)
+{
+    return a + b;
+}
+// calc.h
+#ifndef CALC_H_
+#define CALC_H_
+#ifdef _cplusplus
+extern &quot;C&quot;
+{
+#endif
+void swap(int *, int *);
+int add(int, int);
+#ifdef _cplusplus
+}
+#endif
+#endif // CALC_H_
+</code></pre><p>我们分别编译它们得到了swap.o和add.o这两个目标文件，最后使用ar命令将其打包为一个静态库。</p>
+<pre><code>debian@bogon:~/Documents/link$ gcc add.c -c -o add.o
+debian@bogon:~/Documents/link$ gcc swap.c -c -o swap.o
+debian@bogon:~/Documents/link$ ls
+add.c  add.o  calc.h  swap.c  swap.o
+debian@bogon:~/Documents/link$ ar rcs libcalc.a swap.o add.o
+debian@bogon:~/Documents/link$ ls
+add.c  add.o  calc.h  libcalc.a  swap.c  swap.o
+debian@bogon:~/Documents/link$ 
+</code></pre><p>现在我们怎么使用这个静态库呢？我们写一个test.c使用这个库中的swap函数。代码如下：</p>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &quot;calc.h&quot;
+int main(int argc, char *argv[])
+{
+    int a = 1, b = 2;
+    swap(&amp;a, &amp;b);
+    printf(&quot;%d %d\n&quot;, a, b);
+    return EXIT_SUCCESS;
+}
+</code></pre><p>下来是编译执行，命令行执行gcc test.c ./libcalc.a -o test编译，执行。如图，我们输出了预期的结果。</p>
+<pre><code>debian@bogon:~/Documents/link$ gcc test.c ./libcalc.a -o test
+debian@bogon:~/Documents/link$ ./test
+2 1
+debian@bogon:~/Documents/link$ 
+</code></pre><p>可能你会问，我们使用C语言标准库的时候，编译时并不需要加库名。是的，的确不需要，那是因为标准库已经是标准了，所以会被默认链接。不过因为数学函数库libm.a没有默认链接，所以我们使用了数学函数的代码在编译时需要在命令行指定 -lm 链接（-l是指定链接库，m是去掉lib之后的库名），不过现在好多gcc都默认链接libm.c库了。</p>
+<p>正如我们所看到的，静态链接库解决了一些问题，但是它同时带来了另一些问题。比如说每一个使用了相同的C标准函数的程序都需要和相关目标文件进行链接，浪费磁盘空间；当一个程序有多个副本执行时，相同的库代码部分被载入内存，浪费内存；当库代码更新之后，使用这些库的函数必须全部重新编译等等。</p>
+<h3 id="5-2-动态链接库"><a href="#5-2-动态链接库" class="headerlink" title="5.2 动态链接库"></a>5.2 动态链接库</h3><p>是否有更好的办法？当然有。我们接下来引入动态链接库/共享库（shared library）。</p>
+<p>动态链接库/共享库是一个目标模块，在运行时可以加载到任意的存储器地址，并和一个正在运行的程序链接起来。这个过程就是动态链接（dynamic linking），是由一个叫做动态链接器（dynamic linker）的程序完成的。</p>
+<p>Unix/Linux中共享库的后缀名通常是.so（微软就是DLL文件）。那么，如何建立一个动态链接库？</p>
+<p>我们还是以上面的代码为例，首先删除之前的静态库和目标文件。要建立动态链接库，在命令行输入：</p>
+<pre><code>gcc swap.c add.c -shared -o libcalc.so 
+</code></pre><p>顺便说一下，最好在gcc命令行加上一句-fPIC让其生成与位置无关的代码（PIC），具体原因超出本文范围，故暂不予讨论。</p>
+<pre><code>debian@bogon:~/Documents/link$ gcc swap.c add.c -shared -o libcalc.so
+debian@bogon:~/Documents/link$ ls
+add.c  add.o  calc.h  libcalc.a  libcalc.so  swap.c  swap.o  test  test.c
+debian@bogon:~/Documents/link$ 
+</code></pre><p>如何使用动态链接库？我们继续编译测试代码，执行<code>gcc test.c -o test ./libcalc.so</code>即可。运行后我们仍旧得到了预期的结果。</p>
+<pre><code>debian@bogon:~/Documents/link$ gcc test.c -o test ./libcalc.so
+debian@bogon:~/Documents/link$ ./test 
+2 1
+debian@bogon:~/Documents/link$
+</code></pre><p>这看起来也没什么不一样的。其实不然，我们用ldd命令（ldd是我们推荐的GNU binutils工具包的组成之一）检查test文件的依赖。</p>
+<pre><code>debian@bogon:~/Documents/link$ ldd ./test
+    linux-vdso.so.1 (0x00007fff3d3fb000)
+    ./libcalc.so (0x00007f61c97de000)
+    libc.so.6 =&gt; /lib/x86_64-linux-gnu/libc.so.6 (0x00007f61c943f000)
+    /lib64/ld-linux-x86-64.so.2 (0x00007f61c9be2000)
+debian@bogon:~/Documents/link$ 
+</code></pre><p>我们看到这个文件能顺利运行需要依赖libcalc.so这个动态库，我们还能看到C语言的标准库默认也是动态链接的（在gcc编译的命令行加上 -static 可以要求静态链接）。</p>
+<p>好处何在？第一，库更新之后，只需要替换掉动态库文件即可，无需编译所有依赖库的可执行文件。第二，程序有多个副本执行时，内存中只需要一份库代码，节省空间。</p>
+<p>大家想想，C语言标准库好多程序都在用，但内存只有一份代码，这样节省的空间就相当可观了，而且假如库代码发现bug，只需要更新libc.so即可，所有程序即可使用新的代码，代码的可维护性提高。</p>
+<p>关于库的内容还很多，就此介绍到这里。</p>
+<h3 id="5-3-链接的步骤"><a href="#5-3-链接的步骤" class="headerlink" title="5.3 链接的步骤"></a>5.3 链接的步骤</h3><p>我们来看看链接过程中具体做的事情<strong>。链接的步骤大致包括了地址和空间分配（Address and Storage Allocation）、符号决议（Symbol Resolution）和重定位（Relocation）等主要步骤。</strong></p>
+<p>首先是地址和空间分配，我们之前提到的目标文件其实全称叫做可重定位目标文件（这只是一种名称，还有其他名称）。目标文件的格式已经无限度接近可执行文件了，Unix/Linux下的目标文件的格式叫做ELF（Executable and Linkable Format，可执行连接格式）。本节暂不详细讨论可执行文件的格式，我们只需要知道可执行文件中代码，数据，符号等内容分别存储在不同的段中就可以，这也和第二章保护模式下的内存分段是有一定关系的。我们简单叙述了地址和空间分配以及重定位，但是稍微详细说明一下符号决议。</p>
+<p><strong>什么是符号（symbol）？简单说我们在代码中定义的函数和变量可以统称为符号。符号名（symbol name）就是函数名和变量名了。</strong></p>
+<p>目标文件的拼合其实也就是对目标文件之间相互的符号引用的一个修正。我们知道一个C语言代码文件只要所有的符号被声明过就可以通过编译了，可是对某符号的引用怎么知道位置呢？比如我们调用了printf函数，编译时留下了要填入的函数地址，那么printf函数的实际地址在哪里？这个空位什么时候修正呢？当然是链接的时候，重定位那一步就是做这个的。但是在修改地址之前需要做符号决议，那什么是符号决议？正如前文所说，编译期间留下了很多需要重新定位的符号，所以目标文件中会有一块区域专门保存符号表。链接器如何知道具体位置？其实链接器并不知道，所以链接器会搜索全部的待链接的目标文件，寻找这个符号的位置，然后修正每一个符号的地址。</p>
+<p><strong>在此我们要重点介绍一下在编译程序时几乎所有人会遇见的问题——符号查找问题。在编译时通常会碰到两种编译错误，即找不到某符号或者符号重定义。</strong></p>
+<p>首先介绍找不到符号的情况，比如，当我们声明了一个swap函数却没有定义它的时候，我们调用这个函数的代码可以通过编译，但是在链接期间却会遇到错误。形如“test.c:(.text+0x29): undefined reference to ‘swap’”这样，特别的，MSVC编译器报错是找不到符号_swap。这个下划线从哪里来的？这得从C语言刚诞生说起。当C语言刚面世的时候，已经存在不少用汇编语言写好的库了，因为链接器的符号唯一规则，假如该库中存在main函数，我们就不能在C代码中出现main函数了，因为会遭遇符号重定义错误，倘若放弃这些库又是一大损失。所以当时的编译器会对代码中的符号进行修饰（name decoration），C语言的代码会在符号前加下划线，fortran语言在符号前后都加下划线，这样各个目标文件就不会同名了，就解决了符号冲突的问题。随着时间的流逝，操作系统和编译器都被重写了好多遍，当前的这个问题已经可以忽略。所以新版的gcc一般不会再加下划线做符号修饰（也可以在编译的命令行加上-fleading-underscore/-fno-fleading-underscore开打开/关闭这个是否加下划线）。而MSVC依旧保留了这个传统，所以我们可以看到_swap这样的修饰。</p>
+<p>顺便说一下，符号冲突是很常见的事情，特别是在大型项目的开发中，所以我们需要一个约定良好的命名规则。C++也引入了命名空间来帮助我们解决这些问题，因为C++中存在函数重载，所以C++的符号修饰更加复杂难懂（Linux下有c++filt命令帮助我们翻译一个被C++编译器修饰过的符号）。</p>
+<p>那么，当出现同名符号时链接器到底如何处理。刚才说过会报告重名错误，为什么还要进行探讨？实际上，不仅仅这么简单。在编译时，编译器会向汇编器输出每个全局符号，分为强（strong）符号和弱符号（weak），汇编器把这个信息隐含的编码在可重定位目标文件的符号表里。其中函数和已初始化过的全局变量是强符号，未初始化的全局变量是弱符号。根据强弱符号的定义，GNU链接器采用的规则如下：</p>
+<ol>
+<li>不允许多个强符号</li>
+<li>如果有一个强符号和一个或多个弱符号，则选择强符号</li>
+<li>如果有多个弱符号，则随机选择一个</li>
+</ol>
+<p>其中，第一条会报符号重名错误的，而后两条默认情况下甚至连警告都不会有。关键就在这里，默认甚至连警告都没有。</p>
+<p>我们来个实验具体说一下：</p>
+<pre><code>// link1.c
+#include &lt;stdio.h&gt;
+int n;
+int main(int argc, char *argv[])
+{
+    printf(&quot;It is %d\n&quot;, n);
+    return 0;
+}
+// link2.c
+int n = 5;
+</code></pre><p>这两个文件编译运行会输出什么呢？想必你已经知道了结果，没错，就是5</p>
+<pre><code>debian@bogon:~/Documents/link$ vim link1.c
+debian@bogon:~/Documents/link$ vim link2.c
+debian@bogon:~/Documents/link$ gcc link1.c link2.c -o link
+debian@bogon:~/Documents/link$ ./link 
+It is 5
+debian@bogon:~/Documents/link$ 
+</code></pre><p>初始化过的n是强符号，被优先选择了。但是，在很复杂的项目代码中，这样的错误很难发现，特别是多线程的代码，不过当我们怀疑代码中的bug可能是因为此原因引起的时候，我们可以在gcc命令行加上-fno-common这个参数，这样链接器在遇到多重定义的符号时，都会给出一条警告信息，而无关强弱符号。如下所示：</p>
+<pre><code>debian@bogon:~/Documents/link$ gcc link1.c link2.c -o link -fno-common
+/tmp/ccJnlWp9.o:(.data+0x0): multiple definition of `n&apos;
+/tmp/ccM5uYLR.o:(.bss+0x0): first defined here
+collect2: error: ld returned 1 exit status
+debian@bogon:~/Documents/link$ 
+</code></pre></div><div class="tags"></div><div class="post-share"></div><div class="post-nav"><a href="/2018/08/30/编译、链接与装载/" class="pre"></a><a href="/2018/08/20/Electron应用开发/" class="next">Electron应用开发</a></div><div id="comments"></div></div></div></div><div class="layout-r"><div id="sidebar"><div class="search-pla"></div><div id="toc" class="widget"><div class="widget-title"><i class="fa fa-fei">Contents</i></div><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#第一章-编译和链接"><span class="toc-text">第一章 编译和链接</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-C语言代码为什么要编译后才能执行？整个过程中编译器都做了什么？"><span class="toc-text">1. C语言代码为什么要编译后才能执行？整个过程中编译器都做了什么？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-预处理到底做什么？"><span class="toc-text">2. 预处理到底做什么？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-编译做什么？"><span class="toc-text">3. 编译做什么？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-汇编做什么？"><span class="toc-text">4. 汇编做什么？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-链接做什么？"><span class="toc-text">5. 链接做什么？</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-静态链接库"><span class="toc-text">5.1 静态链接库</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-动态链接库"><span class="toc-text">5.2 动态链接库</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-链接的步骤"><span class="toc-text">5.3 链接的步骤</span></a></li></ol></li></ol></li></ol></div><div class="widget"><div class="widget-title"><i class="fa fa-xie"> Recent</i></div><ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2026/01/04/博客模板/">博客模板</a></li><li class="post-list-item"><a class="post-list-link" href="/2026/01/04/Gitbook教程/">Gitbook教程</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/30/编译、链接与装载/">编译、链接与装载</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/29/编译和链接/">编译和链接</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/20/Electron应用开发/">Electron应用开发</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/13/BlurAdmin应用开发/">BlurAdmin应用开发</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/13/BlurAdmin模板学习/">BlurAdmin模板学习</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/08/06/PostgreSQL操作接口/">PostgreSQL操作接口</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/30/日志分析及数据库表的设计/">日志分析及数据库表的设计</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/07/23/Electron开发流程/">Electron 开发流程</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-biao"> Tags</i></div><div class="tagcloud"><a href="/tags/实习/" style="font-size: 15px;">实习</a> <a href="/tags/PostgreSQL/" style="font-size: 15px;">PostgreSQL</a> <a href="/tags/FAQ/" style="font-size: 15px;">FAQ</a> <a href="/tags/Electron/" style="font-size: 15px;">Electron</a> <a href="/tags/安全/" style="font-size: 15px;">安全</a> <a href="/tags/旧事/" style="font-size: 15px;">旧事</a> <a href="/tags/模板/" style="font-size: 15px;">模板</a> <a href="/tags/博客/" style="font-size: 15px;">博客</a> <a href="/tags/Kernel/" style="font-size: 15px;">Kernel</a> <a href="/tags/操作系统/" style="font-size: 15px;">操作系统</a> <a href="/tags/JavaScript/" style="font-size: 15px;">JavaScript</a> <a href="/tags/红线/" style="font-size: 15px;">红线</a> <a href="/tags/Linux/" style="font-size: 15px;">Linux</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-archive"> Archive</i></div><ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/01/">January 2026</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/08/">August 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/07/">July 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/04/">April 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/03/">March 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/06/">June 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/05/">May 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2017/04/">April 2017</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/03/">March 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04/">April 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/03/">March 2014</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-you"> Blogroll</i></div><ul></ul><a href="http://www.example1.com/" title="site-name1" target="_blank">site-name1</a><ul></ul><a href="http://www.example2.com/" title="site-name2" target="_blank">site-name2</a><ul></ul><a href="http://www.example3.com/" title="site-name3" target="_blank">site-name3</a></div></div></div></div><a id="totop" href="#top"></a><div id="footer"><div class="footer-info"><p><a href="/baidusitemap.xml">Baidu Site Haritası</a> |  <a href="/atom.xml">RSS</a> |  <a href="/about/">About</a></p><p>本站总访问量：<i id="busuanzi_container_site_pv"><i id="busuanzi_value_site_pv"></i></i>次</p><p><span> Copyright &copy;<a href="/." rel="nofollow">xiafei-xupt.</a></span><span> Theme by<a rel="nofollow" target="_blank" href="https://github.com/chaooo/hexo-theme-BlueLake"> BlueLake.</a></span><span> Count by<a href="http://busuanzi.ibruce.info/"> busuanzi.</a></span><span> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a></span></p></div></div></div><script src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js" async></script><script type="text/javascript" src="/js/search.json.js?v=2.0.1"></script><script type="text/javascript" src="/js/toctotop.js?v=2.0.1" async></script></body></html>
